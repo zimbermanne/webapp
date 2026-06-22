@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen">
+            <div class="login-container">
+                <h1>Shop Management System</h1>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label>Username:</label>
+                        <input type="text" id="login-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password:</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <div id="login-error" class="error-message"></div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div id="dashboard-screen" class="screen hidden">
+            <nav class="navbar">
+                <div class="nav-brand">Shop Management</div>
+                <div class="nav-links">
+                    <a href="#" data-section="inventory">Inventory</a>
+                    <a href="#" data-section="sales">Sales</a>
+                    <a href="#" data-section="purchases">Purchases</a>
+                    <a href="#" data-section="expenses">Expenses</a>
+                    <a href="#" data-section="reports">Reports</a>
+                    <a href="#" data-section="users" id="users-link" style="display: none;">Users</a>
+                    <a href="#" data-section="activity" id="activity-link" style="display: none;">Activity</a>
+                    <a href="#" data-section="backup" id="backup-link" style="display: none;">Backup</a>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+            </nav>
+
+            <main class="main-content">
+                <!-- Inventory Section -->
+                <section id="inventory-section" class="content-section">
+                    <h2>Inventory Management</h2>
+                    <div class="action-bar">
+                        <button id="add-item-btn" class="btn btn-primary">Add Item</button>
+                        <button id="refresh-inventory-btn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                    <div id="inventory-metrics" class="metrics-grid"></div>
+                    <div id="inventory-table-container"></div>
+                </section>
+
+                <!-- Sales Section -->
+                <section id="sales-section" class="content-section hidden">
+                    <h2>Sales Management</h2>
+                    <div class="action-bar">
+                        <button id="add-sale-btn" class="btn btn-primary">New Sale</button>
+                        <button id="refresh-sales-btn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                    <div id="sales-summary" class="metrics-grid"></div>
+                    <div id="sales-table-container"></div>
+                </section>
+
+                <!-- Purchases Section -->
+                <section id="purchases-section" class="content-section hidden">
+                    <h2>Purchases Management</h2>
+                    <div class="action-bar">
+                        <button id="add-purchase-btn" class="btn btn-primary">New Purchase</button>
+                        <button id="refresh-purchases-btn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                    <div id="purchases-summary" class="metrics-grid"></div>
+                    <div id="purchases-table-container"></div>
+                </section>
+
+                <!-- Expenses Section -->
+                <section id="expenses-section" class="content-section hidden">
+                    <h2>Expenses Management</h2>
+                    <div class="action-bar">
+                        <button id="add-expense-btn" class="btn btn-primary">Add Expense</button>
+                        <button id="refresh-expenses-btn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                    <div id="expenses-summary" class="metrics-grid"></div>
+                    <div id="expenses-table-container"></div>
+                </section>
+
+                <!-- Reports Section -->
+                <section id="reports-section" class="content-section hidden">
+                    <h2>Financial Reports</h2>
+                    <div class="action-bar">
+                        <button id="refresh-reports-btn" class="btn btn-secondary">Refresh Reports</button>
+                    </div>
+                    <div id="financial-summary"></div>
+                    <div id="profit-loss-report"></div>
+                </section>
+
+                <!-- Users Section -->
+                <section id="users-section" class="content-section hidden">
+                    <h2>User Management</h2>
+                    <div class="action-bar">
+                        <button id="add-user-btn" class="btn btn-primary">Add User</button>
+                        <button id="refresh-users-btn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                    <div id="users-table-container"></div>
+                </section>
+
+                <!-- Activity Section -->
+                <section id="activity-section" class="content-section hidden">
+                    <h2>Activity Logs</h2>
+                    <div class="action-bar">
+                        <button id="refresh-activity-btn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                    <div id="activity-stats"></div>
+                    <div id="activity-table-container"></div>
+                </section>
+
+                <!-- Backup Section -->
+                <section id="backup-section" class="content-section hidden">
+                    <h2>Backup Management</h2>
+                    <div class="action-bar">
+                        <button id="create-backup-btn" class="btn btn-primary">Create Backup</button>
+                        <button id="refresh-backups-btn" class="btn btn-secondary">Refresh List</button>
+                    </div>
+                    <div id="backups-list"></div>
+                </section>
+            </main>
+        </div>
+
+        <!-- Modal for Forms -->
+        <div id="modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <h2 id="modal-title">Form</h2>
+                <div id="modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
