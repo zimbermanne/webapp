@@ -7,10 +7,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database configuration
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/shop_management"
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# 1. Fallback to localhost if you are running things locally
+if not DATABASE_URL:
+    DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/shop_management"
+
+# 2. Fix Railway's "postgres://" protocol typo for SQLAlchemy compatibility
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # Create SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
