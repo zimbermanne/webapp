@@ -1,25 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import sys
 import os
 
-# Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import engine, Base
 from routers import auth, inventory, sales, purchases, expenses, reports, users, backup, activity
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Create database tables
     Base.metadata.create_all(bind=engine)
     yield
-    # Shutdown: Close database connections
     engine.dispose()
-
 
 app = FastAPI(
     title="Shop Management & Accounting System API",
@@ -28,16 +24,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS configuration
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
+# API Routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(inventory.router, prefix="/api/inventory", tags=["Inventory"])
@@ -48,32 +45,29 @@ app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(backup.router, prefix="/api/backup", tags=["Backup"])
 app.include_router(activity.router, prefix="/api/activity", tags=["Activity Log"])
 
-
-@app.get("/")
-async def root():
-    return {
-        "message": "Shop Management & Accounting System API",
-        "version": "1.0.0",
-        "docs": "/docs"
-    }
-
-
-@app.get("/health")
+@app.get("/api/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "version": "1.0.0"}
 
-
-# Mount static files for the frontend
+# 1. Mount the static folder so browser can load /static/styles.css and /static/app.js
+# HTML paths inside index.html should look like: /static/styles.css and /static/app.js
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
+# 2. Serve the index.html directly on the root URL
 @app.get("/")
-async def root():
-    """Serve the frontend"""
-    from fastapi.responses import FileResponse
-    return FileResponse("static/index.html")
+async def serve_root():
+    index_path = os.path.join("static", "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"error": "Frontend static index.html build missing inside static/ directory."}
 
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# 3. Catch-all route for Single Page Application (SPA) routing navigation
+@app.get("/{catchall:path}")
+async def serve_frontend(catchall: str):
+    if catchall.startswith("api/"):
+        return {"detail": "Not Found"}, 404
+    
+    index_path = os.path.join("static", "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"detail": "Not Found"}
