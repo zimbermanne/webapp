@@ -3,144 +3,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shop Management System</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>ShopManager - Zimbermanne Hardware</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="app">
-        <!-- Login Screen -->
+        <!-- Login Screen Wrapper -->
         <div id="login-screen" class="screen">
             <div class="login-container">
                 <h1>Shop Management System</h1>
                 <form id="login-form">
                     <div class="form-group">
+                        <label>Profile Business Select:</label>
+                        <select id="login-profile">
+                            <option value="hardware">Zimbermanne Hardware</option>
+                            <option value="elixir">Regal Elixir Co.</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>Username:</label>
-                        <input type="text" id="login-username" required>
+                        <input type="text" id="login-username" required placeholder="e.g. admin">
                     </div>
                     <div class="form-group">
                         <label>Password:</label>
-                        <input type="password" id="login-password" required>
+                        <input type="password" id="login-password" required placeholder="••••••••">
                     </div>
                     <button type="submit" class="btn btn-primary">Login</button>
                 </form>
-                <div id="login-error" class="error-message"></div>
+                <div id="login-error" class="error-message hidden"></div>
             </div>
         </div>
 
-        <!-- Main Dashboard -->
+        <!-- Main Dashboard View Layer -->
         <div id="dashboard-screen" class="screen hidden">
-            <nav class="navbar">
-                <div class="nav-brand">Shop Management</div>
-                <div class="nav-links">
-                    <a href="#" data-section="inventory">Inventory</a>
-                    <a href="#" data-section="sales">Sales</a>
-                    <a href="#" data-section="purchases">Purchases</a>
-                    <a href="#" data-section="expenses">Expenses</a>
-                    <a href="#" data-section="reports">Reports</a>
-                    <a href="#" data-section="users" id="users-link" style="display: none;">Users</a>
-                    <a href="#" data-section="activity" id="activity-link" style="display: none;">Activity</a>
-                    <a href="#" data-section="backup" id="backup-link" style="display: none;">Backup</a>
-                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
-                </div>
-            </nav>
-
-            <main class="main-content">
-                <!-- Inventory Section -->
-                <section id="inventory-section" class="content-section">
-                    <h2>Inventory Management</h2>
-                    <div class="action-bar">
-                        <button id="add-item-btn" class="btn btn-primary">Add Item</button>
-                        <button id="refresh-inventory-btn" class="btn btn-secondary">Refresh</button>
+            <!-- Sidebar Component -->
+            <aside class="sidebar">
+                <div class="brand-header">
+                    <div class="brand-icon">🏪</div>
+                    <div>
+                        <h2>ShopManager</h2>
+                        <span id="current-profile-label">Zimbermanne Hardware</span>
                     </div>
-                    <div id="inventory-metrics" class="metrics-grid"></div>
+                </div>
+                
+                <div class="nav-group-title">MAIN</div>
+                <nav class="nav-links">
+                    <a href="#" class="active" data-section="dashboard">📊 Dashboard</a>
+                    <a href="#" data-section="pos">🛍️ Point of Sale</a>
+                </nav>
+
+                <div class="nav-group-title">RECORDS</div>
+                <nav class="nav-links">
+                    <a href="#" data-section="inventory">📦 Inventory</a>
+                    <a href="#" data-section="sales">🧾 Sales Logs</a>
+                    <a href="#" data-section="purchases">🚛 Purchases</a>
+                    <a href="#" data-section="expenses">📉 Expenses</a>
+                </nav>
+
+                <div class="nav-group-title">FINANCE</div>
+                <nav class="nav-links">
+                    <a href="#" data-section="debtors">👥 Debtors (Deni)</a>
+                    <a href="#" data-section="creditors">🤝 Creditors</a>
+                    <a href="#" data-section="reports">📈 Reports / P&L</a>
+                </nav>
+
+                <div class="nav-group-title" id="admin-group-title" style="display:none;">CONTROL</div>
+                <nav class="nav-links">
+                    <a href="#" id="users-link" data-section="users" style="display: none;">👥 Users</a>
+                    <a href="#" id="activity-link" data-section="activity" style="display: none;">📜 Activity Logs</a>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="user-badge">
+                        <div class="avatar" id="user-avatar">AD</div>
+                        <div class="user-meta">
+                            <span id="user-display-name">Admin</span>
+                            <span id="user-display-role" class="role-tag">admin</span>
+                        </div>
+                    </div>
+                    <button id="logout-btn" class="btn btn-logout">🚪 Logout</button>
+                </div>
+            </aside>
+
+            <!-- Main Dynamic View Area -->
+            <main class="main-content">
+                <header class="top-bar">
+                    <h1 id="section-title">Dashboard</h1>
+                    <div class="top-bar-right">
+                        <span id="live-clock" class="mono-text">16:32:36</span>
+                    </div>
+                </header>
+
+                <!-- Dynamic Content Sections -->
+                <!-- 1. DASHBOARD VIEW -->
+                <section id="dashboard-section" class="content-section">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <h3>Today's Sales</h3>
+                            <div class="value text-success mono-text" id="kpi-today-sales">0 TZS</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Transactions</h3>
+                            <div class="value mono-text" id="kpi-tx-count">0 today</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Total Inventory</h3>
+                            <div class="value mono-text" id="kpi-total-items">0 items</div>
+                        </div>
+                        <div class="metric-card card-alert">
+                            <h3>Low Stock</h3>
+                            <div class="value text-danger mono-text" id="kpi-low-stock">0 items</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Debtors (Deni)</h3>
+                            <div class="value text-warning mono-text" id="kpi-debtors">0 TZS</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Net Profit</h3>
+                            <div class="value mono-text" id="kpi-net-profit">0 TZS</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-charts-layout">
+                        <div class="chart-container-card">
+                            <h3>Sales This Week (TZS)</h3>
+                            <div class="mock-bar-chart">
+                                <div class="bar" style="height: 80%;" data-label="Mon"><span class="bar-val">22k</span></div>
+                                <div class="bar" style="height: 10%;" data-label="Tue"></div>
+                                <div class="bar" style="height: 5%;" data-label="Wed"></div>
+                                <div class="bar" style="height: 0%;" data-label="Thu"></div>
+                                <div class="bar" style="height: 0%;" data-label="Fri"></div>
+                                <div class="bar" style="height: 0%;" data-label="Sat"></div>
+                                <div class="bar" style="height: 0%;" data-label="Sun"></div>
+                            </div>
+                        </div>
+                        <div class="recent-list-card">
+                            <h3>Low Stock Alerts</h3>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr><th>Item</th><th>Qty</th><th>Price</th><th>Supplier</th></tr>
+                                    </thead>
+                                    <tbody id="dashboard-low-stock-table">
+                                        <!-- Dynamic rows -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. POINT OF SALE VIEW -->
+                <section id="pos-section" class="content-section hidden">
+                    <div class="pos-workspace">
+                        <div class="pos-catalog-side">
+                            <div class="search-bar-box">
+                                <input type="text" id="pos-search-input" placeholder="Search catalog items (e.g. pipe, valve)...">
+                            </div>
+                            <div class="pos-product-grid" id="pos-grid-container">
+                                <!-- Dynamic item blocks populated by javascript -->
+                            </div>
+                        </div>
+                        <div class="pos-cart-side">
+                            <h3>Current Order</h3>
+                            <div class="pos-cart-list" id="pos-cart-items-wrapper">
+                                <div class="empty-state-text">Cart is empty. Tap products to add.</div>
+                            </div>
+                            <div class="cart-totals-summary">
+                                <div class="total-row"><span>Total Payable:</span><span id="pos-cart-total" class="mono-text">0 TZS</span></div>
+                            </div>
+                            <div class="form-group" style="margin-top:15px;">
+                                <label>Customer / Debtor Name:</label>
+                                <input type="text" id="pos-customer-name" placeholder="Optional (Required for Credit/Deni)">
+                            </div>
+                            <div class="form-group">
+                                <label>Payment Execution Mode:</label>
+                                <select id="pos-payment-mode">
+                                    <option value="Cash">Cash (Taslimu)</option>
+                                    <option value="M-Pesa">Vodacom M-Pesa</option>
+                                    <option value="AirtelMoney">Airtel Money</option>
+                                    <option value="Deni">Credit Sale (Deni)</option>
+                                </select>
+                            </div>
+                            <button id="pos-checkout-btn" class="btn btn-success w-100">Complete Transaction</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- OTHER MODULE SECTIONS -->
+                <section id="inventory-section" class="content-section hidden">
+                    <div class="action-bar"><button id="add-item-btn" class="btn btn-primary">+ Add New Stock Item</button></div>
                     <div id="inventory-table-container"></div>
                 </section>
-
-                <!-- Sales Section -->
-                <section id="sales-section" class="content-section hidden">
-                    <h2>Sales Management</h2>
-                    <div class="action-bar">
-                        <button id="add-sale-btn" class="btn btn-primary">New Sale</button>
-                        <button id="refresh-sales-btn" class="btn btn-secondary">Refresh</button>
-                    </div>
-                    <div id="sales-summary" class="metrics-grid"></div>
-                    <div id="sales-table-container"></div>
-                </section>
-
-                <!-- Purchases Section -->
-                <section id="purchases-section" class="content-section hidden">
-                    <h2>Purchases Management</h2>
-                    <div class="action-bar">
-                        <button id="add-purchase-btn" class="btn btn-primary">New Purchase</button>
-                        <button id="refresh-purchases-btn" class="btn btn-secondary">Refresh</button>
-                    </div>
-                    <div id="purchases-summary" class="metrics-grid"></div>
-                    <div id="purchases-table-container"></div>
-                </section>
-
-                <!-- Expenses Section -->
-                <section id="expenses-section" class="content-section hidden">
-                    <h2>Expenses Management</h2>
-                    <div class="action-bar">
-                        <button id="add-expense-btn" class="btn btn-primary">Add Expense</button>
-                        <button id="refresh-expenses-btn" class="btn btn-secondary">Refresh</button>
-                    </div>
-                    <div id="expenses-summary" class="metrics-grid"></div>
-                    <div id="expenses-table-container"></div>
-                </section>
-
-                <!-- Reports Section -->
+                <section id="sales-section" class="content-section hidden"><div id="sales-table-container"></div></section>
+                <section id="purchases-section" class="content-section hidden"><div id="purchases-table-container"></div></section>
+                <section id="expenses-section" class="content-section hidden"><div id="expenses-table-container"></div></section>
+                <section id="debtors-section" class="content-section hidden"><div id="debtors-table-container"></div></section>
+                <section id="creditors-section" class="content-section hidden"><div id="creditors-table-container"></div></section>
+                
+                <!-- REPORTS SECTION MAPPED TO P&L GRAPHICS VIEW -->
                 <section id="reports-section" class="content-section hidden">
-                    <h2>Financial Reports</h2>
-                    <div class="action-bar">
-                        <button id="refresh-reports-btn" class="btn btn-secondary">Refresh Reports</button>
+                    <div class="reports-filter-row">
+                        <div class="form-group">
+                            <label>Start Range:</label>
+                            <input type="date" id="report-start-date" value="2026-06-01">
+                        </div>
+                        <div class="form-group">
+                            <label>End Range:</label>
+                            <input type="date" id="report-end-date" value="2026-06-30">
+                        </div>
+                        <button id="refresh-reports-btn" class="btn btn-secondary">🔄 Refresh Engine</button>
                     </div>
-                    <div id="financial-summary"></div>
-                    <div id="profit-loss-report"></div>
+                    <div class="metrics-grid">
+                        <div class="metric-card"><h3>Total Revenue</h3><div id="pl-revenue" class="value text-success mono-text">0 TZS</div></div>
+                        <div class="metric-card"><h3>Cost of Goods Sold</h3><div id="pl-cogs" class="value mono-text">0 TZS</div></div>
+                        <div class="metric-card"><h3>Gross Profit</h3><div id="pl-gross" class="value text-success mono-text">0 TZS</div></div>
+                        <div class="metric-card"><h3>Total Expenses</h3><div id="pl-expenses" class="value text-danger mono-text">0 TZS</div></div>
+                        <div class="metric-card"><h3>Pending Debts</h3><div id="pl-debts" class="value text-warning mono-text">0 TZS</div></div>
+                        <div class="metric-card"><h3>Net Profit</h3><div id="pl-net" class="value mono-text">0 TZS</div></div>
+                    </div>
+                    <div class="dashboard-charts-layout">
+                        <div class="chart-container-card">
+                            <h3>Expense Breakdown by Category</h3>
+                            <div id="expense-breakdown-list" class="list-data-rows"></div>
+                        </div>
+                        <div class="recent-list-card">
+                            <h3>Top Selling Items</h3>
+                            <div id="top-selling-container"></div>
+                        </div>
+                    </div>
                 </section>
 
-                <!-- Users Section -->
-                <section id="users-section" class="content-section hidden">
-                    <h2>User Management</h2>
-                    <div class="action-bar">
-                        <button id="add-user-btn" class="btn btn-primary">Add User</button>
-                        <button id="refresh-users-btn" class="btn btn-secondary">Refresh</button>
-                    </div>
-                    <div id="users-table-container"></div>
-                </section>
-
-                <!-- Activity Section -->
-                <section id="activity-section" class="content-section hidden">
-                    <h2>Activity Logs</h2>
-                    <div class="action-bar">
-                        <button id="refresh-activity-btn" class="btn btn-secondary">Refresh</button>
-                    </div>
-                    <div id="activity-stats"></div>
-                    <div id="activity-table-container"></div>
-                </section>
-
-                <!-- Backup Section -->
-                <section id="backup-section" class="content-section hidden">
-                    <h2>Backup Management</h2>
-                    <div class="action-bar">
-                        <button id="create-backup-btn" class="btn btn-primary">Create Backup</button>
-                        <button id="refresh-backups-btn" class="btn btn-secondary">Refresh List</button>
-                    </div>
-                    <div id="backups-list"></div>
-                </section>
+                <section id="users-section" class="content-section hidden"><div id="users-table-container"></div></section>
+                <section id="activity-section" class="content-section hidden"><div id="activity-table-container"></div></section>
             </main>
         </div>
 
-        <!-- Modal for Forms -->
+        <!-- Shared Overlay Form Modal Container -->
         <div id="modal" class="modal hidden">
             <div class="modal-content">
-                <span class="close-btn">&times;</span>
-                <h2 id="modal-title">Form</h2>
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+                <h2 id="modal-title">Form Prompt</h2>
                 <div id="modal-body"></div>
             </div>
         </div>
     </div>
-
-    <script src="app.js"></script>
+    <script src="/static/app.js"></script>
 </body>
 </html>
