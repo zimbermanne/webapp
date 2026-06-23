@@ -1,17 +1,17 @@
 /* Custom Palette Definitions Matching Your Technical Blueprint specifications */
 :root {
     --navy-core: #F0EDE6;
-    --navy-deep: #F0EDE6;
-    --canvas-base: #F0EDE6;
-    --accent-gold: #D4A843;
-    --surface-card: #FFFFFF;
-    --text-primary: #F0EDE6;
-    --text-muted: #6F7C85;
-    
-    --hl-green: #2ECC71;
-    --hl-red: #E74C3C;
-    --hl-gold: #F39C12;
-    --border-clean: #E2DED5;
+            --navy-deep: #81765d;
+            --canvas-base: #F0EDE6;
+            --accent-gold: #edebe6;
+            --surface-card: #d7d3c0;
+            --text-primary: #F0EDE6;
+            --text-muted: #6F7C85;
+            
+            --hl-green: #2eaacc;
+            --hl-red: #E74C3C;
+            --hl-gold: #F39C12;
+            --border-clean: #E2DED5;
     
     --sidebar-width: 280px;
     --header-height: 70px;
