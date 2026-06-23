@@ -9,11 +9,18 @@ load_dotenv()
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# 1. Fallback to localhost if you are running things locally
+# 1. Fallback to your internal Railway link if the env variable isn't injected yet, 
+# or use localhost for your local machine development.
 if not DATABASE_URL:
-    DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/shop_management"
+    # Check if you are running locally or inside Railway
+    if os.getenv("RAILWAY_ENVIRONMENT_NAME"): 
+        # Inside Railway, use the internal link provided (replace user/pass/db as configured)
+        DATABASE_URL = "postgresql://postgres:YOUR_PASSWORD@postgres-w6id.railway.internal:5432/shop_management"
+    else:
+        # Local machine development
+        DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/shop_management"
 
-# 2. Fix Railway's "postgres://" protocol typo for SQLAlchemy compatibility
+# 2. Fix the "postgres://" to "postgresql://" protocol mismatch for SQLAlchemy
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -34,3 +41,4 @@ def get_db():
         yield db
     finally:
         db.close()
+    
