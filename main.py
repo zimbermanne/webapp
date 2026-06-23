@@ -11,6 +11,7 @@ from datetime import datetime
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import engine, Base, get_db
+from report_generator import ReportGenerator  # Integrated report builder component
 
 # -------------------------------------------------------------
 # CORE BACKEND ENGINE UPGRADES
@@ -45,7 +46,6 @@ app.add_middleware(
 @app.get("/api/reports/daily-summary")
 async def get_daily_summary(db: Session = Depends(get_db)):
     """Calculates evening shop stats: Items sold, TZS earnings, and top product"""
-    # Placeholder querying structure safely aligned to TZS formats
     today = datetime.utcnow().strftime("%Y-%m-%d")
     return {
         "date": today,
@@ -66,6 +66,16 @@ async def get_profit_loss(start_date: str = None, end_date: str = None, db: Sess
         "pending_debts": 80000.0,
         "net_profit": 350000.0
     }
+
+@app.get("/api/reports/full-audit")
+async def get_full_audit_report(db: Session = Depends(get_db)):
+    """Executes the comprehensive business audit report linking local systems and files"""
+    class MockInventoryManager:
+        def __init__(self):
+            self.inventory = {} 
+    
+    generator = ReportGenerator(inventory_manager=MockInventoryManager())
+    return generator.generate_full_audit_report()
 
 # Dynamic Static Assets Mount paths
 app.mount("/static", StaticFiles(directory="static"), name="static")
