@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShopManager - Zimbermanne Hardware</title>
+    <title>Zimbermanne Hardware Retail OS</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,242 +11,216 @@
 </head>
 <body>
     <div id="app">
-        <!-- Login Screen Wrapper -->
-        <div id="login-screen" class="screen">
-            <div class="login-container">
-                <h1>Shop Management System</h1>
+        <div id="login-screen" class="screen-wrapper container-centered">
+            <div class="card login-card">
+                <div class="login-header">
+                    <span class="brand-badge-icon">🏪</span>
+                    <h2>Retail OS Engine</h2>
+                    <p>Select your store profile below to verify access</p>
+                </div>
                 <form id="login-form">
                     <div class="form-group">
-                        <label>Profile Business Select:</label>
+                        <label>Active Profile Select</label>
                         <select id="login-profile">
                             <option value="hardware">Zimbermanne Hardware</option>
                             <option value="elixir">Regal Elixir Co.</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Username:</label>
-                        <input type="text" id="login-username" required placeholder="e.g. admin">
+                        <label>Username</label>
+                        <input type="text" id="login-username" required placeholder="Enter username...">
                     </div>
                     <div class="form-group">
-                        <label>Password:</label>
+                        <label>Password</label>
                         <input type="password" id="login-password" required placeholder="••••••••">
                     </div>
-                    <button type="submit" class="btn btn-primary">Login</button>
+                    <button type="submit" class="btn btn-primary w-100">Sign In to Dashboard</button>
                 </form>
-                <div id="login-error" class="error-message hidden"></div>
+                <div id="login-error" class="error-banner hidden"></div>
             </div>
         </div>
 
-        <!-- Main Dashboard View Layer -->
-        <div id="dashboard-screen" class="screen hidden">
-            <!-- Sidebar Component -->
-            <aside class="sidebar">
-                <div class="brand-header">
-                    <div class="brand-icon">🏪</div>
-                    <div>
-                        <h2>ShopManager</h2>
-                        <span id="current-profile-label">Zimbermanne Hardware</span>
+        <div id="dashboard-screen" class="screen-wrapper workspace-layout hidden">
+            <aside class="app-sidebar">
+                <div class="sidebar-brand-strip">
+                    <div class="brand-avatar">Z</div>
+                    <div class="brand-text">
+                        <h3>Zimbermanne</h3>
+                        <span id="active-profile-tag">Hardware Store</span>
                     </div>
                 </div>
-                
-                <div class="nav-group-title">MAIN</div>
-                <nav class="nav-links">
-                    <a href="#" class="active" data-section="dashboard">📊 Dashboard</a>
-                    <a href="#" data-section="pos">🛍️ Point of Sale</a>
+
+                <div class="nav-segment-label">CORE VIEWS</div>
+                <nav class="sidebar-nav">
+                    <a href="#" class="nav-item active" data-section="dashboard">📊 Dashboard Summary</a>
+                    <a href="#" class="nav-item" data-section="pos">🛍️ Point of Sale (POS)</a>
                 </nav>
 
-                <div class="nav-group-title">RECORDS</div>
-                <nav class="nav-links">
-                    <a href="#" data-section="inventory">📦 Inventory</a>
-                    <a href="#" data-section="sales">🧾 Sales Logs</a>
-                    <a href="#" data-section="purchases">🚛 Purchases</a>
-                    <a href="#" data-section="expenses">📉 Expenses</a>
+                <div class="nav-segment-label">DATA LOGS</div>
+                <nav class="sidebar-nav">
+                    <a href="#" class="nav-item" data-section="inventory">📦 Inventory Items</a>
+                    <a href="#" class="nav-item" data-section="sales">🧾 Sales Transactions</a>
+                    <a href="#" class="nav-item" data-section="purchases">🚛 Stock Purchases</a>
+                    <a href="#" class="nav-item" data-section="expenses">📉 Expense Records</a>
                 </nav>
 
-                <div class="nav-group-title">FINANCE</div>
-                <nav class="nav-links">
-                    <a href="#" data-section="debtors">👥 Debtors (Deni)</a>
-                    <a href="#" data-section="creditors">🤝 Creditors</a>
-                    <a href="#" data-section="reports">📈 Reports / P&L</a>
+                <div class="nav-segment-label">FINANCIALS</div>
+                <nav class="sidebar-nav">
+                    <a href="#" class="nav-item" data-section="debtors">👥 Debtors (Deni)</a>
+                    <a href="#" class="nav-item" data-section="reports">📈 Profit & Loss (P&L)</a>
                 </nav>
 
-                <div class="nav-group-title" id="admin-group-title" style="display:none;">CONTROL</div>
-                <nav class="nav-links">
-                    <a href="#" id="users-link" data-section="users" style="display: none;">👥 Users</a>
-                    <a href="#" id="activity-link" data-section="activity" style="display: none;">📜 Activity Logs</a>
-                </nav>
-
-                <div class="sidebar-footer">
-                    <div class="user-badge">
-                        <div class="avatar" id="user-avatar">AD</div>
-                        <div class="user-meta">
-                            <span id="user-display-name">Admin</span>
-                            <span id="user-display-role" class="role-tag">admin</span>
+                <div class="sidebar-user-anchor">
+                    <div class="user-pill">
+                        <div class="user-initials" id="user-avatar-tag">AD</div>
+                        <div class="user-details">
+                            <strong id="user-display-name">Admin User</strong>
+                            <span id="user-display-role">root</span>
                         </div>
                     </div>
-                    <button id="logout-btn" class="btn btn-logout">🚪 Logout</button>
+                    <button id="logout-btn" class="btn-logout-link">🚪 Disconnect Session</button>
                 </div>
             </aside>
 
-            <!-- Main Dynamic View Area -->
-            <main class="main-content">
-                <header class="top-bar">
-                    <h1 id="section-title">Dashboard</h1>
-                    <div class="top-bar-right">
-                        <span id="live-clock" class="mono-text">16:32:36</span>
+            <main class="app-viewport">
+                <header class="viewport-header">
+                    <h1 id="viewport-title">Dashboard Summary</h1>
+                    <div class="header-right-meta">
+                        <span id="live-ticker-clock" class="mono-font">17:00:30</span>
                     </div>
                 </header>
 
-                <!-- Dynamic Content Sections -->
-                <!-- 1. DASHBOARD VIEW -->
-                <section id="dashboard-section" class="content-section">
-                    <div class="metrics-grid">
-                        <div class="metric-card">
-                            <h3>Today's Sales</h3>
-                            <div class="value text-success mono-text" id="kpi-today-sales">0 TZS</div>
+                <div class="viewport-scrollable-content">
+                    <section id="dashboard-section" class="ui-section">
+                        <div class="kpi-matrix-row">
+                            <div class="kpi-box text-highlight-green">
+                                <span class="kpi-label">Today's Total Revenue</span>
+                                <h2 id="kpi-today-sales" class="mono-font">0 TZS</h2>
+                            </div>
+                            <div class="kpi-box">
+                                <span class="kpi-label">Volume Processed</span>
+                                <h2 id="kpi-tx-count" class="mono-font">0 items</h2>
+                            </div>
+                            <div class="kpi-box">
+                                <span class="kpi-label">Active Database Items</span>
+                                <h2 id="kpi-total-items" class="mono-font">0 units</h2>
+                            </div>
+                            <div class="kpi-box boundary-alert">
+                                <span class="kpi-label">Low Stock Alarms</span>
+                                <h2 id="kpi-low-stock" class="mono-font text-highlight-red">0 items</h2>
+                            </div>
+                            <div class="kpi-box text-highlight-gold">
+                                <span class="kpi-label">Outstanding Debts (Deni)</span>
+                                <h2 id="kpi-debtors" class="mono-font">0 TZS</h2>
+                            </div>
                         </div>
-                        <div class="metric-card">
-                            <h3>Transactions</h3>
-                            <div class="value mono-text" id="kpi-tx-count">0 today</div>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Total Inventory</h3>
-                            <div class="value mono-text" id="kpi-total-items">0 items</div>
-                        </div>
-                        <div class="metric-card card-alert">
-                            <h3>Low Stock</h3>
-                            <div class="value text-danger mono-text" id="kpi-low-stock">0 items</div>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Debtors (Deni)</h3>
-                            <div class="value text-warning mono-text" id="kpi-debtors">0 TZS</div>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Net Profit</h3>
-                            <div class="value mono-text" id="kpi-net-profit">0 TZS</div>
-                        </div>
-                    </div>
 
-                    <div class="dashboard-charts-layout">
-                        <div class="chart-container-card">
-                            <h3>Sales This Week (TZS)</h3>
-                            <div class="mock-bar-chart">
-                                <div class="bar" style="height: 80%;" data-label="Mon"><span class="bar-val">22k</span></div>
-                                <div class="bar" style="height: 10%;" data-label="Tue"></div>
-                                <div class="bar" style="height: 5%;" data-label="Wed"></div>
-                                <div class="bar" style="height: 0%;" data-label="Thu"></div>
-                                <div class="bar" style="height: 0%;" data-label="Fri"></div>
-                                <div class="bar" style="height: 0%;" data-label="Sat"></div>
-                                <div class="bar" style="height: 0%;" data-label="Sun"></div>
+                        <div class="dashboard-split-grid">
+                            <div class="card panel-card">
+                                <div class="card-title-header">
+                                    <h3>Weekly Performance (TZS Revenue)</h3>
+                                </div>
+                                <div class="bar-chart-canvas">
+                                    <div class="chart-bar" style="height: 75%;" data-day="Mon"><span class="v-label">450k</span></div>
+                                    <div class="chart-bar" style="height: 40%;" data-day="Tue"><span class="v-label">210k</span></div>
+                                    <div class="chart-bar" style="height: 15%;" data-day="Wed"><span class="v-label">85k</span></div>
+                                    <div class="chart-bar" style="height: 60%;" data-day="Thu"><span class="v-label">320k</span></div>
+                                    <div class="chart-bar" style="height: 90%;" data-day="Fri"><span class="v-label">580k</span></div>
+                                    <div class="chart-bar" style="height: 20%;" data-day="Sat"><span class="v-label">110k</span></div>
+                                    <div class="chart-bar" style="height: 0%;" data-day="Sun"><span class="v-label">0</span></div>
+                                </div>
+                            </div>
+                            <div class="card panel-card">
+                                <div class="card-title-header">
+                                    <h3>Critical Low-Stock Items</h3>
+                                </div>
+                                <div class="responsive-table-holder">
+                                    <table>
+                                        <thead>
+                                            <tr><th>Product Name</th><th>Stock Left</th><th>Price (TZS)</th></tr>
+                                        </thead>
+                                        <tbody id="dashboard-low-stock-table">
+                                            </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                        <div class="recent-list-card">
-                            <h3>Low Stock Alerts</h3>
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr><th>Item</th><th>Qty</th><th>Price</th><th>Supplier</th></tr>
-                                    </thead>
-                                    <tbody id="dashboard-low-stock-table">
-                                        <!-- Dynamic rows -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                    </section>
 
-                <!-- 2. POINT OF SALE VIEW -->
-                <section id="pos-section" class="content-section hidden">
-                    <div class="pos-workspace">
-                        <div class="pos-catalog-side">
-                            <div class="search-bar-box">
-                                <input type="text" id="pos-search-input" placeholder="Search catalog items (e.g. pipe, valve)...">
+                    <section id="pos-section" class="ui-section hidden">
+                        <div class="pos-split-layout">
+                            <div class="card catalog-panel">
+                                <div class="search-field-wrapper">
+                                    <input type="text" id="pos-search-input" placeholder="🔍 Filter inventory catalog items instant...">
+                                </div>
+                                <div class="catalog-grid-array" id="pos-grid-container">
+                                    </div>
                             </div>
-                            <div class="pos-product-grid" id="pos-grid-container">
-                                <!-- Dynamic item blocks populated by javascript -->
+                            <div class="card receipt-checkout-panel">
+                                <h3>Active Transaction Cart</h3>
+                                <div class="checkout-items-list" id="pos-cart-items-wrapper">
+                                    <p class="empty-notice">No catalog components tapped yet.</p>
+                                </div>
+                                <div class="checkout-footer-meta">
+                                    <div class="total-aggregate-strip">
+                                        <span>Total Amount Due:</span>
+                                        <h2 id="pos-cart-total" class="mono-font text-highlight-green">0 TZS</h2>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Customer Name Reference</label>
+                                        <input type="text" id="pos-customer-name" placeholder="Required for Credit (Deni)">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Settlement Mode Type</label>
+                                        <select id="pos-payment-mode">
+                                            <option value="Cash">Cash (Taslimu)</option>
+                                            <option value="M-Pesa">Vodacom M-Pesa</option>
+                                            <option value="AirtelMoney">Airtel Money</option>
+                                            <option value="Deni">Credit Accounts (Deni)</option>
+                                        </select>
+                                    </div>
+                                    <button id="pos-checkout-btn" class="btn btn-success w-100">Commit and Post Sale</button>
+                                </div>
                             </div>
                         </div>
-                        <div class="pos-cart-side">
-                            <h3>Current Order</h3>
-                            <div class="pos-cart-list" id="pos-cart-items-wrapper">
-                                <div class="empty-state-text">Cart is empty. Tap products to add.</div>
-                            </div>
-                            <div class="cart-totals-summary">
-                                <div class="total-row"><span>Total Payable:</span><span id="pos-cart-total" class="mono-text">0 TZS</span></div>
-                            </div>
-                            <div class="form-group" style="margin-top:15px;">
-                                <label>Customer / Debtor Name:</label>
-                                <input type="text" id="pos-customer-name" placeholder="Optional (Required for Credit/Deni)">
+                    </section>
+
+                    <section id="inventory-section" class="ui-section hidden">
+                        <div class="table-action-bar"><button id="add-item-btn" class="btn btn-primary">+ Register New Stock Unit</button></div>
+                        <div class="card responsive-table-holder" id="inventory-table-container"></div>
+                    </section>
+                    <section id="sales-section" class="ui-section hidden"><div class="card responsive-table-holder" id="sales-table-container"></div></section>
+                    <section id="purchases-section" class="ui-section hidden"><div class="card responsive-table-holder" id="purchases-table-container"></div></section>
+                    <section id="expenses-section" class="ui-section hidden"><div class="card responsive-table-holder" id="expenses-table-container"></div></section>
+                    <section id="debtors-section" class="ui-section hidden"><div class="card responsive-table-holder" id="debtors-table-container"></div></section>
+                    
+                    <section id="reports-section" class="ui-section hidden">
+                        <div class="card date-filter-strip">
+                            <div class="form-group">
+                                <label>From Date</label>
+                                <input type="date" id="report-start-date" value="2026-06-01">
                             </div>
                             <div class="form-group">
-                                <label>Payment Execution Mode:</label>
-                                <select id="pos-payment-mode">
-                                    <option value="Cash">Cash (Taslimu)</option>
-                                    <option value="M-Pesa">Vodacom M-Pesa</option>
-                                    <option value="AirtelMoney">Airtel Money</option>
-                                    <option value="Deni">Credit Sale (Deni)</option>
-                                </select>
+                                <label>To Date</label>
+                                <input type="date" id="report-end-date" value="2026-06-30">
                             </div>
-                            <button id="pos-checkout-btn" class="btn btn-success w-100">Complete Transaction</button>
+                            <button id="refresh-reports-btn" class="btn btn-secondary">Recalculate Statement Ledger</button>
                         </div>
-                    </div>
-                </section>
-
-                <!-- OTHER MODULE SECTIONS -->
-                <section id="inventory-section" class="content-section hidden">
-                    <div class="action-bar"><button id="add-item-btn" class="btn btn-primary">+ Add New Stock Item</button></div>
-                    <div id="inventory-table-container"></div>
-                </section>
-                <section id="sales-section" class="content-section hidden"><div id="sales-table-container"></div></section>
-                <section id="purchases-section" class="content-section hidden"><div id="purchases-table-container"></div></section>
-                <section id="expenses-section" class="content-section hidden"><div id="expenses-table-container"></div></section>
-                <section id="debtors-section" class="content-section hidden"><div id="debtors-table-container"></div></section>
-                <section id="creditors-section" class="content-section hidden"><div id="creditors-table-container"></div></section>
-                
-                <!-- REPORTS SECTION MAPPED TO P&L GRAPHICS VIEW -->
-                <section id="reports-section" class="content-section hidden">
-                    <div class="reports-filter-row">
-                        <div class="form-group">
-                            <label>Start Range:</label>
-                            <input type="date" id="report-start-date" value="2026-06-01">
+                        <div class="kpi-matrix-row" style="margin-top: 20px;">
+                            <div class="kpi-box"><span>Gross Revenue</span><h3 id="pl-revenue" class="mono-font text-highlight-green">0 TZS</h3></div>
+                            <div class="kpi-box"><span>COGS Expenditure</span><h3 id="pl-cogs" class="mono-font">0 TZS</h3></div>
+                            <div class="kpi-box"><span>Operating Expenses</span><h3 id="pl-expenses" class="mono-font text-highlight-red">0 TZS</h3></div>
+                            <div class="kpi-box text-highlight-gold"><span>Net Realized Yield</span><h2 id="pl-net" class="mono-font">0 TZS</h2></div>
                         </div>
-                        <div class="form-group">
-                            <label>End Range:</label>
-                            <input type="date" id="report-end-date" value="2026-06-30">
-                        </div>
-                        <button id="refresh-reports-btn" class="btn btn-secondary">🔄 Refresh Engine</button>
-                    </div>
-                    <div class="metrics-grid">
-                        <div class="metric-card"><h3>Total Revenue</h3><div id="pl-revenue" class="value text-success mono-text">0 TZS</div></div>
-                        <div class="metric-card"><h3>Cost of Goods Sold</h3><div id="pl-cogs" class="value mono-text">0 TZS</div></div>
-                        <div class="metric-card"><h3>Gross Profit</h3><div id="pl-gross" class="value text-success mono-text">0 TZS</div></div>
-                        <div class="metric-card"><h3>Total Expenses</h3><div id="pl-expenses" class="value text-danger mono-text">0 TZS</div></div>
-                        <div class="metric-card"><h3>Pending Debts</h3><div id="pl-debts" class="value text-warning mono-text">0 TZS</div></div>
-                        <div class="metric-card"><h3>Net Profit</h3><div id="pl-net" class="value mono-text">0 TZS</div></div>
-                    </div>
-                    <div class="dashboard-charts-layout">
-                        <div class="chart-container-card">
-                            <h3>Expense Breakdown by Category</h3>
-                            <div id="expense-breakdown-list" class="list-data-rows"></div>
-                        </div>
-                        <div class="recent-list-card">
-                            <h3>Top Selling Items</h3>
-                            <div id="top-selling-container"></div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="users-section" class="content-section hidden"><div id="users-table-container"></div></section>
-                <section id="activity-section" class="content-section hidden"><div id="activity-table-container"></div></section>
+                    </section>
+                </div>
             </main>
         </div>
 
-        <!-- Shared Overlay Form Modal Container -->
-        <div id="modal" class="modal hidden">
-            <div class="modal-content">
-                <span class="close-btn" onclick="closeModal()">&times;</span>
-                <h2 id="modal-title">Form Prompt</h2>
+        <div id="modal" class="modal-layer hidden">
+            <div class="card modal-surface">
+                <span class="modal-dismiss-trigger" onclick="closeModal()">&times;</span>
+                <h2 id="modal-title">Form Input Layer</h2>
                 <div id="modal-body"></div>
             </div>
         </div>
