@@ -1,118 +1,75 @@
-from datetime import datetime, timezone
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-from models import InventoryItem, Sale, Expense
+from datetime import datetime, timedelta
 
 class ReportGenerator:
-    def __init__(self, db: Session):
-        """
-        Initialize ReportGenerator exclusively via SQLAlchemy database contexts,
-        eliminating local system file dependencies entirely.
-        """
-        self.db = db
+    def __init__(self, inventory_manager):
+        self.inventory_manager = inventory_manager
 
-    def generate_low_stock_report(self) -> dict:
-        """
-        Queries and transforms low stock rows using dot-notation ORM access safely.
-        """
-        low_stock_items = self.db.query(InventoryItem).filter(
-            InventoryItem.quantity <= InventoryItem.reorder_point
-        ).all()
-        
-        return {
-            str(item.id): {
-                "name": item.name,
-                "quantity": item.quantity,
-                "reorder_point": item.reorder_point,
-                "category": item.category
-            } for item in low_stock_items
+    def generate_low_stock_report(self):
+        low_stock_items = {
+            code: details for code, details in 
+            self.inventory_manager.inventory.items() 
+            if details['quantity'] <= details['reorder_point']
         }
+        return low_stock_items
 
-    def generate_sales_report(self, start_date: datetime = None, end_date: datetime = None) -> dict:
+    def generate_expenditure_report(self, expenses_file_path=None, start_date=None, end_date=None):
         """
-        Aggregates financial sales pipelines directly using memory-bounded relational filters.
+        Generate a business expenditure report from expenses.json, with optional date range.
+        Returns a dict with total and breakdown by category.
         """
-        query = self.db.query(Sale)
-        if start_date:
-            query = query.filter(Sale.timestamp >= start_date)
-        if end_date:
-            query = query.filter(Sale.timestamp <= end_date)
-            
-        sales_records = query.all()
-        total_sales_value = sum(sale.total_amount for sale in sales_records)
-        total_items_sold = sum(sale.quantity for sale in sales_records)
-        
-        return {
-            "total_sales_tzs": float(total_sales_value),
-            "total_items_sold": total_items_sold,
-            "transaction_count": len(sales_records),
-            "transactions": [
-                {
-                    "sale_id": sale.id,
-                    "item_id": sale.item_id,
-                    "quantity": sale.quantity,
-                    "total_amount": float(sale.total_amount),
-                    "timestamp": sale.timestamp.strftime("%Y-%m-%d %H:%M:%S") if sale.timestamp else None
-                } for sale in sales_records
-            ]
-        }
+        import json, os
+        # Default path if not provided
+        if not expenses_file_path:
+            expenses_file_path = os.path.join(os.path.dirname(__file__), '../accounting_data/expenses.json')
 
-    def generate_expenditure_report(self, start_date: datetime = None, end_date: datetime = None) -> dict:
-        """
-        Aggregates operational expenses using exact SQL GROUP BY calculations.
-        """
-        query = self.db.query(Expense)
-        if start_date:
-            query = query.filter(Expense.expense_date >= start_date)
-        if end_date:
-            query = query.filter(Expense.expense_date <= end_date)
-            
-        expenses_records = query.all()
-        total_expenses = sum(exp.amount for exp in expenses_records)
-        
-        category_group_query = self.db.query(
-            Expense.category, func.sum(Expense.amount)
-        ).group_by(Expense.category)
-        
-        if start_date:
-            category_group_query = category_group_query.filter(Expense.expense_date >= start_date)
-        if end_date:
-            category_group_query = category_group_query.filter(Expense.expense_date <= end_date)
-            
-        category_metrics = category_group_query.all()
-        
-        return {
-            "total_expenses_tzs": float(total_expenses),
-            "expenses_by_category": {category: float(amount) for category, amount in category_metrics},
-            "records": [
-                {
-                    "id": exp.id,
-                    "category": exp.category,
-                    "amount": float(exp.amount),
-                    "description": exp.description,
-                    "date": exp.expense_date.strftime("%Y-%m-%d") if exp.expense_date else None
-                } for exp in expenses_records
-            ]
-        }
+        # Load expenses
+        if not os.path.exists(expenses_file_path):
+            return {'total_expenses': 0, 'expenses_by_category': {}}
+        with open(expenses_file_path, 'r', encoding='utf-8') as f:
+            try:
+                expenses = json.load(f)
+            except Exception:
+                return {'total_expenses': 0, 'expenses_by_category': {}}
 
-    def generate_full_audit_report(self) -> dict:
+        # Filter by date range if provided
+        filtered_expenses = []
+        for expense in expenses:
+            expense_date = expense.get('expense_date') or expense.get('date')
+            if not expense_date:
+                continue
+            try:
+                dt = datetime.strptime(expense_date[:10], '%Y-%m-%d')
+            except Exception:
+                continue
+            if start_date and dt < start_date:
+                continue
+            if end_date and dt > end_date:
+                continue
+            filtered_expenses.append(expense)
+
+        # Aggregate
+        total = 0
+        by_category = {}
+        for exp in filtered_expenses:
+            amount = float(exp.get('amount', 0))
+            category = exp.get('category', 'Uncategorized')
+            total += amount
+            by_category[category] = by_category.get(category, 0) + amount
+        return {'total_expenses': total, 'expenses_by_category': by_category}
+
+    def generate_full_audit_report(self, expenses_file_path=None, start_date=None, end_date=None):
         """
-        Compiles structural performance metrics synchronized with uniform UTC time calculations.
+        Executes all reporting modules and compiles them into a single comprehensive dictionary structure.
         """
-        all_inventory = self.db.query(InventoryItem).all()
-        total_sku_count = len(all_inventory)
-        total_stock_units = sum(item.quantity for item in all_inventory)
-        
-        # Timezone validation compliance fix
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-        
+        low_stock = self.generate_low_stock_report()
+        expenditures = self.generate_expenditure_report(
+            expenses_file_path=expenses_file_path, 
+            start_date=start_date, 
+            end_date=end_date
+        )
+
         return {
-            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-            "inventory_summary": {
-                "total_unique_items": total_sku_count,
-                "total_stock_units": total_stock_units
-            },
-            "low_stock_report": self.generate_low_stock_report(),
-            "daily_sales_performance": self.generate_sales_report(start_date=today_start),
-            "daily_expenditures": self.generate_expenditure_report(start_date=today_start)
+            'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'low_stock_report': low_stock,
+            'expenditure_report': expenditures
         }

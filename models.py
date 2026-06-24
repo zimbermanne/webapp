@@ -46,9 +46,7 @@ class Sale(Base):
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Float, nullable=False)
     total_amount = Column(Float, nullable=False)
-    customer_name = Column(String(200), nullable=True)
-    customer_address = Column(Text, nullable=True)
-    customer_tin = Column(String(50), nullable=True)
+    customer_name = Column(String(100), nullable=True)
     sale_date = Column(DateTime, default=datetime.utcnow, index=True)
     created_by = Column(String(50), ForeignKey("users.username"), nullable=False)
 

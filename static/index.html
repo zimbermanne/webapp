@@ -236,28 +236,6 @@
         .user-details strong { display: block; font-size: 13.5px; }
         .user-details span { font-size: 11px; color: var(--accent-gold); text-transform: uppercase; }
         .btn-logout-link { background: none; border: none; color: var(--hl-red); font-size: 12px; font-weight: 600; cursor: pointer; }
-        /* AI Agent styles */
-        .agent-msg { display:flex; gap:10px; }
-        .agent-msg--bot .agent-msg-bubble { background:var(--canvas-base); border:1px solid var(--border-clean); border-radius:0 12px 12px 12px; padding:12px 16px; font-size:13.5px; line-height:1.6; max-width:90%; }
-        .agent-msg--user { justify-content:flex-end; }
-        .agent-msg--user .agent-msg-bubble { background:var(--navy-core); color:white; border-radius:12px 12px 0 12px; padding:10px 14px; font-size:13.5px; max-width:80%; }
-        .agent-msg-typing .agent-msg-bubble { font-size:20px; letter-spacing:4px; color:var(--text-muted); }
-        .btn-quick-query { padding:8px 12px; background:var(--canvas-base); border:1px solid var(--border-clean); border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; text-align:left; transition:all 0.15s; }
-        .btn-quick-query:hover { background:var(--navy-core); color:white; border-color:var(--navy-core); }
-        .compare-card { background:var(--canvas-base); border-radius:8px; padding:12px; }
-        .compare-card h5 { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; letter-spacing:0.8px; }
-        .compare-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-bottom:4px; }
-        .change-badge { font-size:11px; font-weight:700; padding:2px 6px; border-radius:4px; }
-        .change-up { background:#d4edda; color:#155724; }
-        .change-down { background:#f8d7da; color:#721c24; }
-        .change-flat { background:#e2e3e5; color:#383d41; }
-        /* PDF export line items */
-        .pdf-item-row { display:flex; gap:8px; align-items:center; }
-        .pdf-item-row input { padding:7px 10px; border:1px solid var(--border-clean); border-radius:6px; font-size:13px; }
-        .pdf-item-row .desc-inp { flex:3; }
-        .pdf-item-row .qty-inp { flex:0.8; }
-        .pdf-item-row .price-inp { flex:1.2; }
-        .pdf-item-row .remove-btn { background:none; border:none; color:var(--hl-red); cursor:pointer; font-size:16px; padding:0 4px; }
 
         /* MAIN CONTENT APPLICATION VIEWPORTS */
         .app-viewport {
@@ -407,6 +385,11 @@
                 <div id="login-err-banner" class="error-banner hidden"></div>
                 <form id="login-form">
                     <div class="form-group">
+                        <label>Active Profile Context</label>
+                        <select id="login-profile-select">
+                            </select>
+                    </div>
+                    <div class="form-group">
                         <label>Username</label>
                         <input type="text" id="login-user-input" required placeholder="Enter username...">
                     </div>
@@ -478,13 +461,6 @@
                 <nav class="sidebar-nav">
                     <a href="#" class="nav-item" data-section="debtors">👥 Debtors (Deni)</a>
                     <a href="#" class="nav-item" data-section="reports">📈 Profit & Loss (P&L)</a>
-                </nav>
-
-                <div class="nav-segment-label">TOOLS</div>
-                <nav class="sidebar-nav">
-                    <a href="#" class="nav-item" data-section="agent">🤖 Zimbi AI Agent</a>
-                    <a href="#" class="nav-item" data-section="import">📥 Import Stock</a>
-                    <a href="#" class="nav-item" data-section="export">🧾 Export Invoice/Quote</a>
                 </nav>
 
                 <div class="sidebar-user-anchor">
@@ -585,14 +561,6 @@
                                         <input type="text" id="pos-customer-name" placeholder="Required for Credit (Deni)">
                                     </div>
                                     <div class="form-group">
-                                        <label>Customer Address <span style="color:var(--text-muted); font-weight:normal;">(optional)</span></label>
-                                        <input type="text" id="pos-customer-address" placeholder="e.g. Sinza, Dar es Salaam">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>TIN No. <span style="color:var(--text-muted); font-weight:normal;">(optional)</span></label>
-                                        <input type="text" id="pos-customer-tin" placeholder="e.g. 123-456-789">
-                                    </div>
-                                    <div class="form-group">
                                         <label>Settlement Mode Type</label>
                                         <select id="pos-payment-mode">
                                             <option value="Cash">Cash (Taslimu)</option>
@@ -667,190 +635,6 @@
                             <div class="kpi-box text-highlight-gold"><span>Net Yield Margin</span><h2 id="pl-net" class="mono-font">0 TZS</h2></div>
                         </div>
                     </section>
-
-                    <!-- ===== ZIMBI AI AGENT ===== -->
-                    <section id="agent-section" class="ui-section hidden">
-                        <div style="display:grid; grid-template-columns:1fr 320px; gap:20px; height:calc(100vh - 130px);">
-                            <!-- Chat panel -->
-                            <div class="card" style="display:flex; flex-direction:column; padding:0; overflow:hidden;">
-                                <div style="padding:20px 24px; border-bottom:1px solid var(--border-clean); display:flex; align-items:center; gap:12px;">
-                                    <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--navy-core),var(--accent-gold));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
-                                    <div>
-                                        <h3 style="font-size:15px; font-weight:700;">Zimbi — Business Intelligence Agent</h3>
-                                        <span style="font-size:11px; color:var(--text-muted);">Powered by Claude AI · Analyses your live business data</span>
-                                    </div>
-                                    <div style="margin-left:auto;">
-                                        <select id="agent-period-select" style="padding:6px 10px; border:1px solid var(--border-clean); border-radius:6px; font-size:12px; background:white;">
-                                            <option value="day">Today</option>
-                                            <option value="month" selected>This Month</option>
-                                            <option value="year">This Year</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div id="agent-chat-messages" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px;">
-                                    <div class="agent-msg agent-msg--bot">
-                                        <div class="agent-msg-bubble">👋 Habari! I'm <strong>Zimbi</strong>, your AI business analyst. Ask me anything about your sales, profit, stock levels, or trends — I have access to your live data. Try:<br><br>
-                                        • "Compare this month vs last month"<br>
-                                        • "Which products are selling best?"<br>
-                                        • "What's our profit margin this year?"<br>
-                                        • "Alert me on any concerning trends"</div>
-                                    </div>
-                                </div>
-                                <div style="padding:16px 20px; border-top:1px solid var(--border-clean); display:flex; gap:10px;">
-                                    <input type="text" id="agent-input" placeholder="Ask Zimbi anything about your business..." style="flex:1; padding:10px 14px; border:1.5px solid var(--border-clean); border-radius:8px; font-size:14px; outline:none;" onkeydown="if(event.key==='Enter')sendAgentMessage()">
-                                    <button onclick="sendAgentMessage()" id="agent-send-btn" style="padding:10px 20px; background:var(--navy-core); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; white-space:nowrap;">Send ↑</button>
-                                </div>
-                            </div>
-
-                            <!-- Comparison panel -->
-                            <div style="display:flex; flex-direction:column; gap:16px; overflow-y:auto;">
-                                <div class="card" style="padding:20px;">
-                                    <h4 style="font-size:13px; font-weight:700; margin-bottom:14px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;">📊 Period Comparison</h4>
-                                    <div id="compare-loading" style="color:var(--text-muted); font-size:13px;">Loading...</div>
-                                    <div id="compare-cards" style="display:flex; flex-direction:column; gap:12px;"></div>
-                                </div>
-                                <div class="card" style="padding:20px;">
-                                    <h4 style="font-size:13px; font-weight:700; margin-bottom:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;">⚡ Quick Queries</h4>
-                                    <div style="display:flex; flex-direction:column; gap:8px;">
-                                        <button onclick="quickQuery('Give me a full financial summary and highlight any issues')" class="btn-quick-query">Full Financial Summary</button>
-                                        <button onclick="quickQuery('Compare this month vs last month in detail')" class="btn-quick-query">Month vs Last Month</button>
-                                        <button onclick="quickQuery('Compare this year vs last year performance')" class="btn-quick-query">Year vs Last Year</button>
-                                        <button onclick="quickQuery('Which products are my top performers and which are slow movers?')" class="btn-quick-query">Top & Slow Products</button>
-                                        <button onclick="quickQuery('What are the low stock items I need to reorder urgently?')" class="btn-quick-query">Low Stock Alerts</button>
-                                        <button onclick="quickQuery('Analyse my daily sales trend and identify any patterns')" class="btn-quick-query">Daily Sales Trend</button>
-                                        <button onclick="quickQuery('What is my gross profit margin and how can I improve it?')" class="btn-quick-query">Profit Margin Analysis</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- ===== STOCK IMPORT ===== -->
-                    <section id="import-section" class="ui-section hidden">
-                        <div style="max-width:700px; margin:0 auto; display:flex; flex-direction:column; gap:20px;">
-                            <div class="card">
-                                <h3 style="margin-bottom:6px;">📥 Import Stock from CSV / Excel</h3>
-                                <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Upload a CSV or Excel file to bulk-add or update inventory items. Download the template to see the required format.</p>
-
-                                <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-                                    <button onclick="downloadImportTemplate()" class="btn" style="background:var(--navy-core); color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-size:13px;">⬇ Download Template CSV</button>
-                                </div>
-
-                                <div id="import-drop-zone" style="border:2px dashed var(--border-clean); border-radius:12px; padding:40px; text-align:center; cursor:pointer; background:var(--canvas-base); transition:all 0.2s;" onclick="document.getElementById('import-file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent-gold)'" ondrop="handleImportDrop(event)">
-                                    <div style="font-size:40px; margin-bottom:10px;">📂</div>
-                                    <p style="font-weight:600; color:var(--text-primary);">Click to select file or drag & drop here</p>
-                                    <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Supports .csv, .xlsx, .xls files</p>
-                                    <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImportFileSelect(this.files[0])">
-                                </div>
-
-                                <div style="margin-top:16px; display:flex; align-items:center; gap:10px;">
-                                    <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
-                                        <input type="checkbox" id="import-update-existing" style="width:16px; height:16px;">
-                                        <span>Update existing items (add to quantity, update price)</span>
-                                    </label>
-                                </div>
-
-                                <div id="import-selected-file" style="display:none; margin-top:12px; padding:10px 14px; background:#f0f9f0; border-radius:8px; font-size:13px; display:flex; align-items:center; gap:10px;">
-                                    <span>📄</span>
-                                    <span id="import-selected-name"></span>
-                                    <button onclick="submitImport()" id="import-submit-btn" style="margin-left:auto; padding:8px 20px; background:#2ECC71; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Import Now</button>
-                                </div>
-                            </div>
-
-                            <div id="import-result" class="card" style="display:none;">
-                                <h4 style="margin-bottom:12px;">Import Result</h4>
-                                <div id="import-result-body"></div>
-                            </div>
-
-                            <div class="card" style="background:var(--navy-core); color:white;">
-                                <h4 style="margin-bottom:10px; color:var(--accent-gold);">📋 Required CSV Format</h4>
-                                <code style="font-size:12px; display:block; line-height:1.8; color:#ccc;">
-                                    name, quantity, price, category (optional), reorder_point (optional)<br>
-                                    PVC Pipe 1/2 Inch, 100, 2500, Plumbing, 20<br>
-                                    Cement 50kg Bag, 50, 35000, Building Materials, 10<br>
-                                    Steel Rod 12mm, 200, 8500, Steel, 15
-                                </code>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- ===== INVOICE / QUOTE EXPORT ===== -->
-                    <section id="export-section" class="ui-section hidden">
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:1100px; margin:0 auto;">
-                            <div class="card">
-                                <h3 style="margin-bottom:16px;">🧾 Generate Invoice / Quote PDF</h3>
-
-                                <div style="display:flex; gap:8px; margin-bottom:16px;">
-                                    <button onclick="setDocType('invoice')" id="doc-type-invoice" class="btn btn-success" style="flex:1;">📄 Invoice</button>
-                                    <button onclick="setDocType('quote')" id="doc-type-quote" class="btn" style="flex:1; background:var(--navy-core); color:white;">📋 Quote</button>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Invoice / Quote Number</label>
-                                    <input type="text" id="pdf-inv-number" placeholder="e.g. INV-2026-001" value="INV-2026-001">
-                                </div>
-                                <div class="form-group">
-                                    <label>Date</label>
-                                    <input type="date" id="pdf-date">
-                                </div>
-                                <div class="form-group">
-                                    <label>Customer / Company Name *</label>
-                                    <input type="text" id="pdf-customer" placeholder="e.g. Singitha Holdings Ltd">
-                                </div>
-                                <div class="form-group">
-                                    <label>Customer Address</label>
-                                    <input type="text" id="pdf-address" placeholder="e.g. Sinza, Dar es Salaam">
-                                </div>
-                                <div class="form-group">
-                                    <label>TIN Number (optional)</label>
-                                    <input type="text" id="pdf-tin" placeholder="e.g. 123-456-789">
-                                </div>
-                                <div class="form-group">
-                                    <label>Notes (optional)</label>
-                                    <textarea id="pdf-notes" style="width:100%; padding:8px; border:1px solid var(--border-clean); border-radius:6px; font-size:13px; resize:vertical;" rows="2" placeholder="Payment due within 30 days..."></textarea>
-                                </div>
-
-                                <h4 style="margin:16px 0 10px; font-size:13px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Line Items</h4>
-                                <div id="pdf-items-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-                                <button onclick="addPdfItem()" style="margin-top:10px; padding:8px 14px; background:transparent; border:1.5px dashed var(--border-clean); border-radius:6px; cursor:pointer; font-size:13px; color:var(--text-muted); width:100%;">+ Add Line Item</button>
-
-                                <div style="margin-top:20px;">
-                                    <button onclick="generatePdf()" style="width:100%; padding:12px; background:var(--navy-core); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700; font-size:14px;" id="pdf-generate-btn">⬇ Generate & Download PDF</button>
-                                </div>
-                            </div>
-
-                            <!-- Preview totals -->
-                            <div>
-                                <div class="card" style="margin-bottom:16px;">
-                                    <h4 style="margin-bottom:14px; color:var(--text-muted); font-size:12px; text-transform:uppercase; letter-spacing:0.8px;">Live Preview</h4>
-                                    <div style="border:1px solid var(--border-clean); border-radius:8px; padding:16px; min-height:200px; background:white;">
-                                        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
-                                            <div>
-                                                <div style="font-size:18px; font-weight:700; color:var(--navy-core);">Zimbermanne</div>
-                                                <div style="font-size:11px; color:var(--accent-gold); font-weight:600;">Hardware & Building Materials</div>
-                                            </div>
-                                            <div id="preview-doc-type" style="font-size:22px; font-weight:700; color:#2ECC71;">INVOICE</div>
-                                        </div>
-                                        <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">To: <span id="preview-customer">—</span></div>
-                                        <table style="width:100%; font-size:11px; border-collapse:collapse;">
-                                            <thead><tr style="background:var(--navy-core); color:white;"><th style="padding:6px; text-align:left;">Item</th><th style="padding:6px; text-align:right;">Qty</th><th style="padding:6px; text-align:right;">Total</th></tr></thead>
-                                            <tbody id="preview-items"></tbody>
-                                        </table>
-                                        <div style="margin-top:10px; text-align:right; font-size:12px;">
-                                            <div>Subtotal: <b id="preview-subtotal">0 TZS</b></div>
-                                            <div style="color:var(--text-muted);">VAT 18%: <span id="preview-vat">0 TZS</span></div>
-                                            <div style="font-size:14px; font-weight:700; color:#2ECC71; margin-top:4px;">TOTAL: <span id="preview-total">0 TZS</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="card" style="background:#f8f9ff;">
-                                    <h4 style="margin-bottom:10px; font-size:12px; color:var(--text-muted); text-transform:uppercase;">Recent Exports</h4>
-                                    <div id="recent-exports-list" style="font-size:13px; color:var(--text-muted);">No exports yet this session.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
                 </div>
             </main>
         </div>
@@ -865,58 +649,29 @@
     </div>
 
     <script>
-        // ---- Real backend wiring ----
-        const API_BASE_URL = window.location.origin + '/api';
-
-        let authToken = sessionStorage.getItem('auth_token') || null;
-        let currentUser = sessionStorage.getItem('current_user') || null;
-
-        // Local-only state for sections not yet wired to the backend
-        // (purchases, expenses, debtors, reports). Sales + inventory are real.
-        let activeProfile = JSON.parse(sessionStorage.getItem('local_mock_state') || 'null') || { purchases: [], expenses: [] };
+        // Core Reactive Mock System Database Engine State Arrays
+        let sysProfiles = JSON.parse(localStorage.getItem('sys_profiles')) || [
+            { id: "hardware", name: "Zimbermanne Hardware", user: "admin", pass: "admin", inventory: [], sales: [], purchases: [], expenses: [] }
+        ];
+        
+        let activeProfile = null;
         let posCart = [];
-        let inventoryCache = [];
-        let salesCache = [];
-
-        async function apiRequest(path, options = {}) {
-            const headers = Object.assign(
-                { 'Content-Type': 'application/json' },
-                options.headers || {}
-            );
-            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
-            const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
-
-            if (res.status === 401) {
-                terminateSession();
-                throw new Error('Session expired. Please log in again.');
-            }
-            if (!res.ok) {
-                let detail = `Request failed (${res.status})`;
-                try { detail = (await res.json()).detail || detail; } catch (e) {}
-                throw new Error(detail);
-            }
-            if (res.status === 204) return null;
-            return res.json();
-        }
 
         // App Initializer Context Setup
         window.addEventListener('DOMContentLoaded', () => {
+            syncProfileSelectDropdown();
             updateClockTicker();
             setInterval(updateClockTicker, 1000);
-
-            if (authToken) {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('dashboard-screen').classList.remove('hidden');
-                document.getElementById('sidebar-profile-title').textContent = 'Shop';
-                document.getElementById('user-display-name').textContent = currentUser || '';
-                dispatchViewSync('dashboard');
-            }
         });
 
         function updateClockTicker() {
             const clockEl = document.getElementById('live-ticker-clock');
             if (clockEl) clockEl.textContent = new Date().toLocaleTimeString();
+        }
+
+        function syncProfileSelectDropdown() {
+            const select = document.getElementById('login-profile-select');
+            select.innerHTML = sysProfiles.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
         }
 
         function toggleAuthForms(toRegister) {
@@ -925,67 +680,49 @@
         }
 
         // Authentication form submissions handlers
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
+        document.getElementById('register-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const name = document.getElementById('reg-profile-name').value;
             const user = document.getElementById('reg-admin-user').value;
             const pass = document.getElementById('reg-admin-pass').value;
+            const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
 
-            try {
-                await apiRequest('/auth/register', {
-                    method: 'POST',
-                    body: JSON.stringify({ username: user, password: pass, email: null, role: 'admin' })
-                });
-                showBanner('register-success-banner', 'Account created! Switching to login...', true);
-                setTimeout(() => { toggleAuthForms(false); e.target.reset(); }, 1500);
-            } catch (err) {
-                showBanner('register-err-banner', err.message);
+            if (sysProfiles.some(p => p.id === id)) {
+                showBanner('register-err-banner', 'Profile identifier already exists.');
+                return;
             }
-            void name; // profile/business naming isn't supported by the backend yet
+
+            sysProfiles.push({ id, name, user, pass, inventory: [], sales: [], purchases: [], expenses: [] });
+            localStorage.setItem('sys_profiles', JSON.stringify(sysProfiles));
+            
+            showBanner('register-success-banner', 'Profile deployed successfully! Switching fields...', true);
+            syncProfileSelectDropdown();
+            setTimeout(() => { toggleAuthForms(false); e.target.reset(); }, 2000);
         });
 
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
+        document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
+            const selectedId = document.getElementById('login-profile-select').value;
             const user = document.getElementById('login-user-input').value;
             const pass = document.getElementById('login-pass-input').value;
 
-            try {
-                const formBody = new URLSearchParams();
-                formBody.append('username', user);
-                formBody.append('password', pass);
-
-                const res = await fetch(`${API_BASE_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formBody
-                });
-                if (!res.ok) {
-                    let detail = 'Invalid access credentials.';
-                    try { detail = (await res.json()).detail || detail; } catch (err) {}
-                    throw new Error(detail);
-                }
-                const data = await res.json();
-                authToken = data.access_token;
-                currentUser = user;
-                sessionStorage.setItem('auth_token', authToken);
-                sessionStorage.setItem('current_user', currentUser);
-
-                document.getElementById('sidebar-profile-title').textContent = 'Shop';
-                document.getElementById('user-display-name').textContent = currentUser;
-
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('dashboard-screen').classList.remove('hidden');
-                dispatchViewSync('dashboard');
-            } catch (err) {
-                showBanner('login-err-banner', err.message || 'Invalid access credentials.');
+            const profileMatch = sysProfiles.find(p => p.id === selectedId && p.user === user && p.pass === pass);
+            if (!profileMatch) {
+                showBanner('login-err-banner', 'Invalid access credentials.');
+                return;
             }
+
+            activeProfile = profileMatch;
+            document.getElementById('sidebar-profile-title').textContent = activeProfile.name;
+            document.getElementById('user-display-name').textContent = activeProfile.user;
+            
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+            dispatchViewSync('dashboard');
         });
 
         function terminateSession() {
-            authToken = null;
-            currentUser = null;
-            sessionStorage.removeItem('auth_token');
-            sessionStorage.removeItem('current_user');
+            activeProfile = null;
             document.getElementById('dashboard-screen').classList.add('hidden');
             document.getElementById('auth-screen').classList.remove('hidden');
         }
@@ -1008,7 +745,7 @@
 
         // Dynamic State UI Redraw Dispatchers
         function dispatchViewSync(view) {
-            if (!authToken) return;
+            if (!activeProfile) return;
             switch(view) {
                 case 'dashboard': refreshDashboardData(); break;
                 case 'pos': buildPOSWorkspace(); break;
@@ -1018,47 +755,36 @@
                 case 'expenses': syncExpensesTable(); break;
                 case 'debtors': syncDebtorsTable(); break;
                 case 'reports': runProfitLossReport(); break;
-                case 'agent': loadCompareCards(); break;
-                case 'export': initExportSection(); break;
             }
         }
 
         // Business Logic Engines
-        async function refreshDashboardData() {
-            try {
-                const [items, sales] = await Promise.all([
-                    apiRequest('/inventory/'),
-                    apiRequest('/sales/')
-                ]);
-                inventoryCache = items;
-                salesCache = sales;
+        function refreshDashboardData() {
+            const items = activeProfile.inventory || [];
+            const lowStockItems = items.filter(i => Number(i.qty) <= Number(i.minAlert));
+            
+            let revenueToday = 0;
+            let transactionCount = activeProfile.sales.length;
+            activeProfile.sales.forEach(s => revenueToday += Number(s.subtotal));
 
-                const lowStockItems = items.filter(i => Number(i.quantity) <= Number(i.reorder_point));
+            let debtorAggregate = 0;
+            const trackingDebts = {};
+            activeProfile.sales.forEach(s => {
+                if(s.method === 'Deni') trackingDebts[s.customer] = (trackingDebts[s.customer]||0) + Number(s.subtotal);
+            });
+            Object.values(trackingDebts).forEach(v => debtorAggregate += v);
 
-                const today = new Date().toDateString();
-                const todaysSales = sales.filter(s => new Date(s.sale_date).toDateString() === today);
-                const revenueToday = todaysSales.reduce((sum, s) => sum + Number(s.total_amount), 0);
-
-                document.getElementById('kpi-today-sales').textContent = `${revenueToday.toLocaleString()} TZS`;
-                document.getElementById('kpi-tx-count').textContent = `${todaysSales.length} processed`;
-                document.getElementById('kpi-low-stock').textContent = `${lowStockItems.length} warnings`;
-                document.getElementById('kpi-debtors').textContent = `-- TZS`; // not yet wired to backend
-
-                document.getElementById('dashboard-low-stock-table').innerHTML = lowStockItems.map(i => `
-                    <tr style="color:var(--hl-red); font-weight:600;"><td>${i.name}</td><td>${i.quantity} units left</td><td>Alert limit: ${i.reorder_point}</td></tr>
-                `).join('') || '<tr><td colspan="3" style="color:var(--text-muted)">All levels are healthy.</td></tr>';
-            } catch (err) {
-                console.error('Dashboard load failed:', err);
-            }
+            document.getElementById('kpi-today-sales').textContent = `${revenueToday.toLocaleString()} TZS`;
+            document.getElementById('kpi-tx-count').textContent = `${transactionCount} processed`;
+            document.getElementById('kpi-low-stock').textContent = `${lowStockItems.length} warnings`;
+            document.getElementById('kpi-debtors').textContent = `${debtorAggregate.toLocaleString()} TZS`;
+            
+            document.getElementById('dashboard-low-stock-table').innerHTML = lowStockItems.map(i => `
+                <tr style="color:var(--hl-red); font-weight:600;"><td>${i.name}</td><td>${i.qty} units left</td><td>Alert limit: ${i.minAlert}</td></tr>
+            `).join('') || '<tr><td colspan="3" style="color:var(--text-muted)">All levels are healthy.</td></tr>';
         }
 
-        async function buildPOSWorkspace() {
-            try {
-                inventoryCache = await apiRequest('/inventory/');
-            } catch (err) {
-                alert('Could not load inventory: ' + err.message);
-                inventoryCache = [];
-            }
+        function buildPOSWorkspace() {
             filterPOSCatalog();
             redrawCart();
         }
@@ -1066,33 +792,33 @@
         function filterPOSCatalog() {
             const query = document.getElementById('pos-search-input').value.toLowerCase();
             const container = document.getElementById('pos-grid-container');
-            const items = inventoryCache || [];
+            const items = activeProfile.inventory || [];
 
             container.innerHTML = items.filter(i => i.name.toLowerCase().includes(query)).map(i => `
-                <div class="product-tap-card" onclick="addUnitToCart(${i.id})">
+                <div class="product-tap-card" onclick="addUnitToCart('${i.sku}')">
                     <h4>${i.name}</h4>
-                    <span>Stock: ${i.quantity}</span>
+                    <span>Stock: ${i.qty}</span>
                     <strong style="color:var(--hl-green); display:block; margin-top:4px;">${Number(i.price).toLocaleString()} TZS</strong>
                 </div>
             `).join('') || '<p style="color:var(--text-muted); padding:10px;">No matching stock entries.</p>';
         }
 
-        function addUnitToCart(itemId) {
-            const match = inventoryCache.find(i => i.id === itemId);
-            if (!match || Number(match.quantity) <= 0) { alert('Out of stock unit selection error.'); return; }
-
-            const existing = posCart.find(c => c.id === itemId);
+        function addUnitToCart(sku) {
+            const match = activeProfile.inventory.find(i => i.sku === sku);
+            if (!match || Number(match.qty) <= 0) { alert('Out of stock unit selection error.'); return; }
+            
+            const existing = posCart.find(c => c.sku === sku);
             if (existing) {
-                if (existing.qty + 1 > Number(match.quantity)) { alert('Insufficient inventory depth.'); return; }
+                if (existing.qty + 1 > Number(match.qty)) { alert('Insufficient inventory depth.'); return; }
                 existing.qty++;
             } else {
-                posCart.push({ id: match.id, name: match.name, price: match.price, qty: 1 });
+                posCart.push({ sku: match.sku, name: match.name, price: match.price, qty: 1 });
             }
             redrawCart();
         }
 
-        function alterCartQuantity(itemId, offset) {
-            const index = posCart.findIndex(c => c.id === itemId);
+        function alterCartQuantity(sku, offset) {
+            const index = posCart.findIndex(c => c.sku === sku);
             if(index === -1) return;
             posCart[index].qty += offset;
             if(posCart[index].qty <= 0) posCart.splice(index, 1);
@@ -1110,9 +836,9 @@
                     <div class="cart-item-row">
                         <div><strong>${c.name}</strong><br><span style="font-size:11px; color:var(--text-muted)">${Number(c.price).toLocaleString()} TZS</span></div>
                         <div class="cart-qty-controls">
-                            <button onclick="alterCartQuantity(${c.id}, -1)">-</button>
+                            <button onclick="alterCartQuantity('${c.sku}', -1)">-</button>
                             <span style="padding:0 8px;" class="mono-font">${c.qty}</span>
-                            <button onclick="alterCartQuantity(${c.id}, 1)">+</button>
+                            <button onclick="alterCartQuantity('${c.sku}', 1)">+</button>
                         </div>
                         <div class="mono-font">${sub.toLocaleString()} TZS</div>
                     </div>
@@ -1122,64 +848,49 @@
             document.getElementById('pos-cart-total').textContent = `${aggregateSum.toLocaleString()} TZS`;
         }
 
-        async function commitCheckout() {
+        function commitCheckout() {
             if(!posCart.length) return;
-            const customerName = document.getElementById('pos-customer-name').value || "Walk-In Consumer";
-            const customerAddress = document.getElementById('pos-customer-address').value || null;
-            const customerTin = document.getElementById('pos-customer-tin').value || null;
+            const customer = document.getElementById('pos-customer-name').value || "Walk-In Consumer";
             const mode = document.getElementById('pos-payment-mode').value;
 
-            if (mode === 'Deni' && customerName === "Walk-In Consumer") {
+            if (mode === 'Deni' && customer === "Walk-In Consumer") {
                 alert("Error: Explicit Account Identification Name required to process Debtors credit allocations.");
                 return;
             }
 
-            try {
-                // Backend records one line item per Sale row, so a multi-item
-                // cart becomes one POST per line, all tagged with the same customer.
-                for (const c of posCart) {
-                    await apiRequest('/sales/', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            item_id: c.id,
-                            quantity: c.qty,
-                            unit_price: c.price,
-                            customer_name: customerName,
-                            customer_address: customerAddress,
-                            customer_tin: customerTin
-                        })
-                    });
-                }
+            // Deduct depth inventory properties & write lines transaction logs
+            posCart.forEach(c => {
+                const liveItem = activeProfile.inventory.find(i => i.sku === c.sku);
+                if(liveItem) liveItem.qty = Number(liveItem.qty) - c.qty;
+                
+                activeProfile.sales.push({
+                    ts: new Date().toLocaleString(),
+                    customer,
+                    item: c.name,
+                    qty: c.qty,
+                    subtotal: c.price * c.qty,
+                    method: mode
+                });
+            });
 
-                posCart = [];
-                document.getElementById('pos-customer-name').value = '';
-                document.getElementById('pos-customer-address').value = '';
-                document.getElementById('pos-customer-tin').value = '';
-                await buildPOSWorkspace();
-                alert("Transaction processing executed successfully.");
-            } catch (err) {
-                alert('Checkout failed: ' + err.message);
-            }
+            saveGlobalState();
+            posCart = [];
+            document.getElementById('pos-customer-name').value = '';
+            buildPOSWorkspace();
+            alert("Transaction processing executed successfully.");
         }
 
         // Configuration Form Panels builders
-        async function syncInventoryTable() {
+        function syncInventoryTable() {
             const target = document.getElementById('inventory-table-body');
-            try {
-                inventoryCache = await apiRequest('/inventory/');
-            } catch (err) {
-                target.innerHTML = `<tr><td colspan="6" style="color:var(--hl-red);">Failed to load inventory: ${err.message}</td></tr>`;
-                return;
-            }
-
-            target.innerHTML = inventoryCache.map(i => `
+            target.innerHTML = activeProfile.inventory.map((i, index) => `
                 <tr>
-                    <td class="mono-font">#${i.id}</td>
+                    <td class="mono-font">${i.sku}</td>
                     <td><strong>${i.name}</strong></td>
-                    <td>${i.quantity} units</td>
+                    <td>${i.qty} units</td>
                     <td>${Number(i.price).toLocaleString()} TZS</td>
-                    <td>${i.category || '—'}</td>
-                    <td><button onclick="deleteInventoryRecord(${i.id})" class="btn-logout-link">Delete</button></td>
+                    <td>${Number(i.cost).toLocaleString()} TZS</td>
+                    <td><button onclick="deleteInventoryRecord(${index})" class="btn-logout-link">Delete</button></td>
                 </tr>
             `).join('') || '<tr><td colspan="6" style="color:var(--text-muted); text-align:center;">No stock data entry records found.</td></tr>';
         }
@@ -1187,70 +898,44 @@
         function openItemModal() {
             showFormModal("Register Inventory Specification Card", `
                 <form id="modal-inv-form" onsubmit="saveInventoryItem(event)">
+                    <div class="form-group"><label>Unique Sku / barcode Code</label><input type="text" id="form-sku" required placeholder="e.g. PIPE-12"></div>
                     <div class="form-group"><label>Descriptive Label Title</label><input type="text" id="form-name" required placeholder="e.g. 1-inch Brass Valve"></div>
                     <div class="form-group"><label>Initial Stock Float Depth</label><input type="number" id="form-qty" required value="0"></div>
                     <div class="form-group"><label>Outward Selling Price (TZS)</label><input type="number" id="form-price" required placeholder="Value structure multiplier"></div>
-                    <div class="form-group"><label>Category</label><input type="text" id="form-category" placeholder="e.g. Plumbing"></div>
+                    <div class="form-group"><label>Inward Base Supply Cost (TZS)</label><input type="number" id="form-cost" required placeholder="Value cost basis"></div>
                     <div class="form-group"><label>Minimum Replenishment Floor Alert</label><input type="number" id="form-alert" required value="5"></div>
                     <button type="submit" class="btn btn-success w-100">Commit Record</button>
                 </form>
             `);
         }
 
-        async function saveInventoryItem(e) {
+        function saveInventoryItem(e) {
             e.preventDefault();
-            try {
-                await apiRequest('/inventory/', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        name: document.getElementById('form-name').value,
-                        quantity: Number(document.getElementById('form-qty').value),
-                        price: Number(document.getElementById('form-price').value),
-                        category: document.getElementById('form-category').value || null,
-                        reorder_point: Number(document.getElementById('form-alert').value)
-                    })
-                });
-                closeFormModal();
+            activeProfile.inventory.push({
+                sku: document.getElementById('form-sku').value,
+                name: document.getElementById('form-name').value,
+                qty: document.getElementById('form-qty').value,
+                price: document.getElementById('form-price').value,
+                cost: document.getElementById('form-cost').value,
+                minAlert: document.getElementById('form-alert').value
+            });
+            saveGlobalState();
+            closeFormModal();
+            syncInventoryTable();
+        }
+
+        function deleteInventoryRecord(idx) {
+            if(confirm("Purge asset record line entry item parameter row?")) {
+                activeProfile.inventory.splice(idx,1);
+                saveGlobalState();
                 syncInventoryTable();
-            } catch (err) {
-                alert('Could not save item: ' + err.message);
             }
         }
 
-        async function deleteInventoryRecord(itemId) {
-            if(!confirm("Purge asset record line entry item parameter row?")) return;
-            try {
-                await apiRequest(`/inventory/${itemId}`, { method: 'DELETE' });
-                syncInventoryTable();
-            } catch (err) {
-                alert('Could not delete item: ' + err.message);
-            }
-        }
-
-        async function syncSalesTable() {
-            const target = document.getElementById('sales-table-body');
-            try {
-                [salesCache, inventoryCache] = await Promise.all([
-                    apiRequest('/sales/'),
-                    apiRequest('/inventory/')
-                ]);
-            } catch (err) {
-                target.innerHTML = `<tr><td colspan="6" style="color:var(--hl-red);">Failed to load sales: ${err.message}</td></tr>`;
-                return;
-            }
-
-            target.innerHTML = salesCache.map(s => {
-                const item = inventoryCache.find(i => i.id === s.item_id);
-                return `
-                <tr>
-                    <td>${new Date(s.sale_date).toLocaleString()}</td>
-                    <td><strong>${s.customer_name || 'Walk-In Consumer'}</strong>${s.customer_tin ? `<br><span style="font-size:11px; color:var(--text-muted)">TIN: ${s.customer_tin}</span>` : ''}</td>
-                    <td>${item ? item.name : '#' + s.item_id}</td>
-                    <td>${s.quantity}</td>
-                    <td class="mono-font">${Number(s.total_amount).toLocaleString()} TZS</td>
-                    <td><span style="font-size:11px; padding:2px 6px; background:#EEE; border-radius:4px;">${s.created_by}</span></td>
-                </tr>`;
-            }).join('') || '<tr><td colspan="6" style="color:var(--text-muted); text-align:center;">No transaction lines logged.</td></tr>';
+        function syncSalesTable() {
+            document.getElementById('sales-table-body').innerHTML = activeProfile.sales.map(s => `
+                <tr><td>${s.ts}</td><td><strong>${s.customer}</strong></td><td>${s.item}</td><td>${s.qty}</td><td class="mono-font">${Number(s.subtotal).toLocaleString()} TZS</td><td><span style="font-size:11px; padding:2px 6px; background:#EEE; border-radius:4px;">${s.method}</span></td></tr>
+            `).join('') || '<tr><td colspan="6" style="color:var(--text-muted); text-align:center;">No transaction lines logged.</td></tr>';
         }
 
         function syncPurchasesTable() {
@@ -1260,7 +945,7 @@
         }
 
         function openPurchaseModal() {
-            const selections = inventoryCache.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+            const selections = activeProfile.inventory.map(i => `<option value="${i.sku}">${i.name}</option>`).join('');
             showFormModal("Record Inward Supplier Shipment Procurement", `
                 <form onsubmit="savePurchaseRecord(event)">
                     <div class="form-group"><label>Select Target Inventory Asset</label><select id="p-sku">${selections}</select></div>
@@ -1273,13 +958,13 @@
 
         function savePurchaseRecord(e) {
             e.preventDefault();
-            const itemId = Number(document.getElementById('p-sku').value);
+            const sku = document.getElementById('p-sku').value;
             const qty = Number(document.getElementById('p-qty').value);
             const supplier = document.getElementById('p-vendor').value;
 
-            const item = inventoryCache.find(i => i.id === itemId);
+            const item = activeProfile.inventory.find(i => i.sku === sku);
             if(item) {
-                // NOTE: this is still local-only (not wired to /api/purchases yet)
+                item.qty = Number(item.qty) + qty;
                 activeProfile.purchases.push({ date: new Date().toLocaleDateString(), name: item.name, qty: qty, supplier: supplier });
                 saveGlobalState();
                 closeFormModal();
@@ -1318,42 +1003,42 @@
         }
 
         function syncDebtorsTable() {
-            // Debtors/credit-sale tracking isn't wired to the backend yet --
-            // the real Sale model has no payment-method/credit field.
-            document.getElementById('debtors-table-body').innerHTML =
-                '<tr><td colspan="3" style="color:var(--text-muted); text-align:center;">Debtor tracking not yet connected to backend.</td></tr>';
+            const debtAccounts = {};
+            activeProfile.sales.forEach(s => {
+                if(s.method === 'Deni') debtAccounts[s.customer] = (debtAccounts[s.customer] || 0) + Number(s.subtotal);
+            });
+
+            document.getElementById('debtors-table-body').innerHTML = Object.keys(debtAccounts).map(k => `
+                <tr><td><strong>${k}</strong></td><td class="mono-font text-highlight-gold">${debtAccounts[k].toLocaleString()} TZS</td><td><button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="clearDebtorAccount('${k}')">Clear Balance Payment</button></td></tr>
+            `).join('') || '<tr><td colspan="3" style="color:var(--text-muted); text-align:center;">No outstanding ledger lines open.</td></tr>';
         }
 
         function clearDebtorAccount(customer) {
-            alert('Debtor settlement is not yet wired to the backend.');
+            if(confirm(`Process account balance clearing settlement transaction lines for ${customer}?`)) {
+                activeProfile.sales.forEach(s => {
+                    if(s.customer === customer && s.method === 'Deni') s.method = 'Paid (Deni Settlement)';
+                });
+                saveGlobalState();
+                syncDebtorsTable();
+            }
         }
 
-        async function runProfitLossReport() {
-            // Approximation from cached inventory/sales (local purchases/expenses
-            // are still mock data). Use GET /api/reports/profit-loss for the real figure.
-            try {
-                if (!salesCache.length) salesCache = await apiRequest('/sales/');
-                if (!inventoryCache.length) inventoryCache = await apiRequest('/inventory/');
-            } catch (err) {
-                console.error('Report load failed:', err);
-            }
-
-            let rev = 0, exp = 0;
-            salesCache.forEach(s => rev += Number(s.total_amount));
+        function runProfitLossReport() {
+            let rev = 0, cogs = 0, exp = 0;
+            activeProfile.sales.forEach(s => rev += Number(s.subtotal));
+            activeProfile.inventory.forEach(i => cogs += (Number(i.cost) * Number(i.qty)));
             activeProfile.expenses.forEach(e => exp += Number(e.amount));
 
             document.getElementById('pl-revenue').textContent = `${rev.toLocaleString()} TZS`;
-            document.getElementById('pl-cogs').textContent = `-- TZS (see /api/reports/profit-loss)`;
+            document.getElementById('pl-cogs').textContent = `${cogs.toLocaleString()} TZS`;
             document.getElementById('pl-expenses').textContent = `${exp.toLocaleString()} TZS`;
             document.getElementById('pl-net').textContent = `${(rev - exp).toLocaleString()} TZS`;
         }
 
         function saveGlobalState() {
-            // Local-only state (purchases/expenses mocks) persisted per browser tab.
-            sessionStorage.setItem('local_mock_state', JSON.stringify({
-                purchases: activeProfile.purchases,
-                expenses: activeProfile.expenses
-            }));
+            const idx = sysProfiles.findIndex(p => p.id === activeProfile.id);
+            if(idx !== -1) sysProfiles[idx] = activeProfile;
+            localStorage.setItem('sys_profiles', JSON.stringify(sysProfiles));
         }
 
         // Utility helper methods
@@ -1374,310 +1059,6 @@
             document.getElementById('modal-layer').classList.add('hidden');
             document.getElementById('modal-container-body').innerHTML = '';
         }
-
-        // ============================================================
-        // ZIMBI AI AGENT
-        // ============================================================
-        let agentBusy = false;
-
-        async function sendAgentMessage() {
-            if (agentBusy) return;
-            const input = document.getElementById('agent-input');
-            const msg = input.value.trim();
-            if (!msg) return;
-            input.value = '';
-            appendAgentMsg(msg, 'user');
-            await callAgent(msg);
-        }
-
-        async function quickQuery(msg) {
-            if (agentBusy) return;
-            appendAgentMsg(msg, 'user');
-            await callAgent(msg);
-        }
-
-        async function callAgent(msg) {
-            agentBusy = true;
-            document.getElementById('agent-send-btn').disabled = true;
-            const period = document.getElementById('agent-period-select').value;
-            const typingId = appendAgentMsg('...', 'bot', true);
-            try {
-                const data = await apiRequest('/agent/chat', {
-                    method: 'POST',
-                    body: JSON.stringify({ message: msg, period })
-                });
-                removeAgentMsg(typingId);
-                appendAgentMsg(data.reply, 'bot');
-            } catch(e) {
-                removeAgentMsg(typingId);
-                appendAgentMsg('⚠️ Error: ' + (e.message || 'Could not reach AI service. Check ANTHROPIC_API_KEY is set on server.'), 'bot');
-            } finally {
-                agentBusy = false;
-                document.getElementById('agent-send-btn').disabled = false;
-            }
-        }
-
-        function appendAgentMsg(text, role, isTyping=false) {
-            const container = document.getElementById('agent-chat-messages');
-            const id = 'msg-' + Date.now();
-            const div = document.createElement('div');
-            div.className = `agent-msg agent-msg--${role}${isTyping?' agent-msg-typing':''}`;
-            div.id = id;
-            // Convert markdown-ish text to HTML
-            const formatted = text
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\n/g, '<br>');
-            div.innerHTML = `<div class="agent-msg-bubble">${formatted}</div>`;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-            return id;
-        }
-
-        function removeAgentMsg(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        }
-
-        async function loadCompareCards() {
-            try {
-                const data = await apiRequest('/agent/compare');
-                document.getElementById('compare-loading').style.display = 'none';
-                const container = document.getElementById('compare-cards');
-                container.innerHTML = '';
-
-                const periods = [
-                    { label: '📅 Daily', key: 'daily', a: 'Today', b: 'Yesterday' },
-                    { label: '📆 Monthly', key: 'monthly', a: 'This Month', b: 'Last Month' },
-                    { label: '🗓️ Yearly', key: 'yearly', a: 'This Year', b: 'Last Year' },
-                ];
-
-                periods.forEach(p => {
-                    const d = data[p.key];
-                    const chg = d.change_pct;
-                    const badge = chg > 0 ? `<span class="change-badge change-up">▲ ${chg}%</span>` : chg < 0 ? `<span class="change-badge change-down">▼ ${Math.abs(chg)}%</span>` : `<span class="change-badge change-flat">─ 0%</span>`;
-                    const revA = Object.values(d)[0].revenue;
-                    const revB = Object.values(d)[1].revenue;
-                    const txA = Object.values(d)[0].transactions;
-                    const txB = Object.values(d)[1].transactions;
-                    container.innerHTML += `
-                    <div class="compare-card">
-                        <h5>${p.label} ${badge}</h5>
-                        <div class="compare-row"><span>${p.a}</span><strong>${Number(revA).toLocaleString()} TZS</strong></div>
-                        <div class="compare-row"><span>${p.b}</span><span style="color:var(--text-muted)">${Number(revB).toLocaleString()} TZS</span></div>
-                        <div class="compare-row" style="margin-top:4px; font-size:11px; color:var(--text-muted);"><span>Transactions: ${txA} vs ${txB}</span></div>
-                    </div>`;
-                });
-            } catch(e) {
-                document.getElementById('compare-loading').textContent = 'Could not load comparison data.';
-            }
-        }
-
-        // ============================================================
-        // STOCK IMPORT
-        // ============================================================
-        let importFile = null;
-
-        function handleImportFileSelect(file) {
-            if (!file) return;
-            importFile = file;
-            document.getElementById('import-selected-name').textContent = file.name;
-            document.getElementById('import-selected-file').style.display = 'flex';
-        }
-
-        function handleImportDrop(e) {
-            e.preventDefault();
-            document.getElementById('import-drop-zone').style.borderColor = '';
-            const file = e.dataTransfer.files[0];
-            if (file) handleImportFileSelect(file);
-        }
-
-        async function downloadImportTemplate() {
-            const a = document.createElement('a');
-            a.href = API_BASE_URL + '/agent/import/template';
-            a.download = 'stock_import_template.csv';
-            // Need auth header — fetch and create blob
-            try {
-                const resp = await fetch(a.href, { headers: { Authorization: 'Bearer ' + authToken } });
-                const blob = await resp.blob();
-                a.href = URL.createObjectURL(blob);
-                a.click();
-            } catch(e) { alert('Could not download template'); }
-        }
-
-        async function submitImport() {
-            if (!importFile) return;
-            const btn = document.getElementById('import-submit-btn');
-            btn.textContent = 'Importing...';
-            btn.disabled = true;
-
-            const updateExisting = document.getElementById('import-update-existing').checked;
-            const formData = new FormData();
-            formData.append('file', importFile);
-
-            try {
-                const resp = await fetch(`${API_BASE_URL}/agent/import/stock?update_existing=${updateExisting}`, {
-                    method: 'POST',
-                    headers: { Authorization: 'Bearer ' + authToken },
-                    body: formData
-                });
-                const data = await resp.json();
-                const resultDiv = document.getElementById('import-result');
-                resultDiv.style.display = 'block';
-                const isOk = resp.ok;
-                document.getElementById('import-result-body').innerHTML = isOk ? `
-                    <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
-                        <div style="padding:10px 20px; background:#d4edda; border-radius:8px; text-align:center;"><div style="font-size:22px; font-weight:700; color:#155724;">${data.created}</div><div style="font-size:11px; color:#155724;">Created</div></div>
-                        <div style="padding:10px 20px; background:#d1ecf1; border-radius:8px; text-align:center;"><div style="font-size:22px; font-weight:700; color:#0c5460;">${data.updated}</div><div style="font-size:11px; color:#0c5460;">Updated</div></div>
-                        <div style="padding:10px 20px; background:#f8d7da; border-radius:8px; text-align:center;"><div style="font-size:22px; font-weight:700; color:#721c24;">${data.errors}</div><div style="font-size:11px; color:#721c24;">Errors</div></div>
-                    </div>
-                    ${data.error_details.length ? '<p style="font-size:12px; color:red;"><b>Errors:</b><br>' + data.error_details.map(e=>`Row ${e.row}: ${e.error} ${e.name?'('+e.name+')':''}`).join('<br>') + '</p>' : ''}
-                    <p style="font-size:12px; color:var(--text-muted);">Go to Inventory to see imported items.</p>
-                ` : `<p style="color:red;">${data.detail || JSON.stringify(data)}</p>`;
-            } catch(e) {
-                document.getElementById('import-result').style.display = 'block';
-                document.getElementById('import-result-body').innerHTML = '<p style="color:red;">Import failed: ' + e.message + '</p>';
-            } finally {
-                btn.textContent = 'Import Now';
-                btn.disabled = false;
-            }
-        }
-
-        // ============================================================
-        // PDF INVOICE / QUOTE EXPORT
-        // ============================================================
-        let pdfDocType = 'invoice';
-        let pdfItems = [];
-        let recentExports = [];
-
-        function setDocType(type) {
-            pdfDocType = type;
-            const inv = document.getElementById('doc-type-invoice');
-            const qt = document.getElementById('doc-type-quote');
-            if (type === 'invoice') {
-                inv.style.background = '#2ECC71'; inv.style.color = 'white';
-                qt.style.background = 'transparent'; qt.style.color = 'var(--text-primary)'; qt.style.border = '1px solid var(--border-clean)';
-                document.getElementById('preview-doc-type').textContent = 'INVOICE';
-                document.getElementById('preview-doc-type').style.color = '#2ECC71';
-            } else {
-                qt.style.background = '#2980B9'; qt.style.color = 'white';
-                inv.style.background = 'transparent'; inv.style.color = 'var(--text-primary)'; inv.style.border = '1px solid var(--border-clean)';
-                document.getElementById('preview-doc-type').textContent = 'QUOTE';
-                document.getElementById('preview-doc-type').style.color = '#2980B9';
-            }
-        }
-
-        function addPdfItem() {
-            const id = Date.now();
-            pdfItems.push({ id, desc: '', qty: 1, price: 0 });
-            renderPdfItems();
-        }
-
-        function removePdfItem(id) {
-            pdfItems = pdfItems.filter(i => i.id !== id);
-            renderPdfItems();
-        }
-
-        function renderPdfItems() {
-            const list = document.getElementById('pdf-items-list');
-            list.innerHTML = pdfItems.map(item => `
-                <div class="pdf-item-row">
-                    <input class="desc-inp" type="text" placeholder="Description" value="${item.desc}" onchange="updatePdfItem(${item.id},'desc',this.value)" oninput="updatePdfItem(${item.id},'desc',this.value)">
-                    <input class="qty-inp" type="number" placeholder="Qty" value="${item.qty}" min="0" onchange="updatePdfItem(${item.id},'qty',this.value)" oninput="updatePdfItem(${item.id},'qty',this.value)">
-                    <input class="price-inp" type="number" placeholder="Unit Price" value="${item.price}" min="0" onchange="updatePdfItem(${item.id},'price',this.value)" oninput="updatePdfItem(${item.id},'price',this.value)">
-                    <button class="remove-btn" onclick="removePdfItem(${item.id})">✕</button>
-                </div>
-            `).join('');
-            updatePdfPreview();
-        }
-
-        function updatePdfItem(id, field, value) {
-            const item = pdfItems.find(i => i.id === id);
-            if (!item) return;
-            item[field] = (field === 'qty' || field === 'price') ? parseFloat(value) || 0 : value;
-            updatePdfPreview();
-        }
-
-        function updatePdfPreview() {
-            document.getElementById('preview-customer').textContent = document.getElementById('pdf-customer')?.value || '—';
-            const previewItems = document.getElementById('preview-items');
-            let subtotal = 0;
-            previewItems.innerHTML = pdfItems.map(item => {
-                const total = (item.qty || 0) * (item.price || 0);
-                subtotal += total;
-                return `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 6px;">${item.desc || '—'}</td><td style="padding:4px 6px; text-align:right;">${item.qty}</td><td style="padding:4px 6px; text-align:right;">${total.toLocaleString()}</td></tr>`;
-            }).join('');
-            const vat = subtotal * 0.18;
-            document.getElementById('preview-subtotal').textContent = subtotal.toLocaleString() + ' TZS';
-            document.getElementById('preview-vat').textContent = vat.toLocaleString() + ' TZS';
-            document.getElementById('preview-total').textContent = (subtotal + vat).toLocaleString() + ' TZS';
-        }
-
-        async function generatePdf() {
-            const customer = document.getElementById('pdf-customer').value.trim();
-            if (!customer) { alert('Customer name is required'); return; }
-            if (!pdfItems.length) { alert('Add at least one line item'); return; }
-
-            const btn = document.getElementById('pdf-generate-btn');
-            btn.textContent = '⏳ Generating...';
-            btn.disabled = true;
-
-            const payload = {
-                invoice_number: document.getElementById('pdf-inv-number').value || 'INV-001',
-                date: document.getElementById('pdf-date').value,
-                customer_name: customer,
-                customer_address: document.getElementById('pdf-address').value,
-                customer_tin: document.getElementById('pdf-tin').value,
-                notes: document.getElementById('pdf-notes').value,
-                type: pdfDocType,
-                items: pdfItems.map(i => ({ description: i.desc, quantity: i.qty, unit_price: i.price }))
-            };
-
-            try {
-                const resp = await fetch(`${API_BASE_URL}/agent/export/invoice`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
-                    body: JSON.stringify(payload)
-                });
-                if (!resp.ok) {
-                    const err = await resp.json();
-                    throw new Error(err.detail || 'PDF generation failed');
-                }
-                const blob = await resp.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Zimbermanne_${pdfDocType === 'quote' ? 'Quote' : 'Invoice'}_${payload.invoice_number}.pdf`;
-                a.click();
-                URL.revokeObjectURL(url);
-
-                // Track recent exports
-                recentExports.unshift({ type: pdfDocType, no: payload.invoice_number, customer, ts: new Date().toLocaleTimeString() });
-                if (recentExports.length > 5) recentExports.pop();
-                document.getElementById('recent-exports-list').innerHTML = recentExports.map(e =>
-                    `<div style="margin-bottom:6px; padding:6px 10px; background:white; border-radius:6px; font-size:12px;">📄 ${e.type === 'quote' ? 'Quote' : 'Invoice'} #${e.no} — ${e.customer} <span style="color:var(--text-muted); float:right;">${e.ts}</span></div>`
-                ).join('');
-            } catch(e) {
-                alert('Error: ' + e.message);
-            } finally {
-                btn.textContent = '⬇ Generate & Download PDF';
-                btn.disabled = false;
-            }
-        }
-
-        // Init PDF section with one blank item and today's date
-        function initExportSection() {
-            if (pdfItems.length === 0) { addPdfItem(); }
-            const todayInput = document.getElementById('pdf-date');
-            if (todayInput && !todayInput.value) {
-                todayInput.value = new Date().toISOString().split('T')[0];
-            }
-        }
-
-        // Wire customer name preview update
-        document.addEventListener('DOMContentLoaded', () => {
-            const custInp = document.getElementById('pdf-customer');
-            if (custInp) custInp.addEventListener('input', updatePdfPreview);
-        });
     </script>
 </body>
 </html>
