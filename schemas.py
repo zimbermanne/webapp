@@ -85,6 +85,8 @@ class SaleBase(BaseModel):
     quantity: int = Field(..., gt=0)
     unit_price: float = Field(..., gt=0)
     customer_name: Optional[str] = None
+    customer_address: Optional[str] = None
+    customer_tin: Optional[str] = Field(None, max_length=50)
 
 
 class SaleCreate(SaleBase):
