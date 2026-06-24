@@ -12,6 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import engine, Base, get_db
 from report_generator import ReportGenerator
+from routers import auth, inventory, sales, purchases, expenses, reports, users, activity, backup
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +35,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- Real, database-backed routers ---
+# These existed as files but were never mounted on the app before -- nothing
+# under /api/auth, /api/inventory, /api/sales, etc. was actually reachable.
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(inventory.router, prefix="/api/inventory", tags=["inventory"])
+app.include_router(sales.router, prefix="/api/sales", tags=["sales"])
+app.include_router(purchases.router, prefix="/api/purchases", tags=["purchases"])
+app.include_router(expenses.router, prefix="/api/expenses", tags=["expenses"])
+app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(activity.router, prefix="/api/activity", tags=["activity"])
+app.include_router(backup.router, prefix="/api/backup", tags=["backup"])
 
 # --- MOCK LEDGER DATA STORAGE (Replace with database models as needed) ---
 DEBTORS_LEDGER = [

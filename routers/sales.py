@@ -44,6 +44,8 @@ async def create_sale(
         unit_price=sale.unit_price,
         total_amount=total_amount,
         customer_name=sale.customer_name,
+        customer_address=sale.customer_address,
+        customer_tin=sale.customer_tin,
         sale_date=datetime.utcnow(),
         created_by=current_user.username
     )
