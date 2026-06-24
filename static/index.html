@@ -49,6 +49,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--canvas-base);
 .login-brand h2{font-size:1.4rem;font-weight:700;color:var(--navy-core);}
 .login-brand p{font-size:0.82rem;color:var(--text-muted);margin-top:4px;}
 .login-error{color:var(--hl-red);font-size:0.82rem;font-weight:600;text-align:center;margin-top:1rem;min-height:1.2em;}
+.profile-card{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0.8rem;border:1px solid var(--border-clean);border-radius:10px;cursor:pointer;background:var(--surface-card);transition:border-color 0.15s ease, transform 0.1s ease;}
+.profile-card:hover{border-color:var(--navy-core);transform:translateY(-1px);}
+.profile-card .pc-avatar{width:36px;height:36px;border-radius:50%;background:var(--navy-core);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.82rem;flex-shrink:0;}
+.profile-card.demo-card .pc-avatar{background:#1f9d55;}
+.profile-card .pc-name{font-weight:600;font-size:0.9rem;}
+.profile-card .pc-role{font-size:0.74rem;color:var(--text-muted);}
+.profile-card .pc-badge{margin-left:auto;font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(31,157,85,0.12);color:#1f9d55;}
+.profile-card .pc-del{margin-left:auto;background:none;border:none;color:var(--text-muted);font-size:0.85rem;cursor:pointer;padding:2px 6px;}
+.profile-card .pc-del:hover{color:var(--hl-red);}
 
 /* ========================================================================
    APP SHELL
@@ -254,17 +263,23 @@ select.form-control{cursor:pointer;}
     <div class="login-brand">
       <div class="brand-logo">Z</div>
       <h2>Zimbermanne Retail OS</h2>
-      <p>Enter operator credentials to continue</p>
+      <p id="login-subtitle">Select a profile to continue</p>
     </div>
-    <div class="form-group">
-      <label class="form-label">Operator Name</label>
-      <input type="text" id="login-user" class="form-control" placeholder="e.g. Mr. Zimbermann">
+
+    <!-- Profile picker -->
+    <div id="login-profile-list" style="display:flex;flex-direction:column;gap:0.6rem;margin-bottom:0.5rem;"></div>
+    <button class="btn btn-secondary btn-block" onclick="openCreateProfileModal()" style="margin-top:0.4rem;">+ Create New Profile</button>
+
+    <!-- Password step (hidden until a profile needing a password is selected) -->
+    <div id="login-pass-section" style="display:none;margin-top:1rem;">
+      <div class="form-group">
+        <label class="form-label">Password for <span id="login-pass-name"></span></label>
+        <input type="password" id="login-pass" class="form-control" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="handleLogin()">Authenticate Session</button>
+      <button class="btn btn-secondary btn-block" style="margin-top:0.5rem;" onclick="backToProfiles()">← Back to profiles</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Password</label>
-      <input type="password" id="login-pass" class="form-control" placeholder="••••••••">
-    </div>
-    <button class="btn btn-primary btn-block" onclick="handleLogin()" style="margin-top:0.5rem;">Authenticate Session</button>
+
     <div class="login-error" id="login-error"></div>
   </div>
 </div>
@@ -298,7 +313,7 @@ select.form-control{cursor:pointer;}
         <div class="user-avatar" id="user-avatar-txt">MZ</div>
         <div>
           <div class="user-name" id="user-display-name">Mr. Zimbermann</div>
-          <div class="user-role">Administrator</div>
+          <div class="user-role" id="user-role-label">Administrator</div>
         </div>
       </div>
     </div>
@@ -384,6 +399,22 @@ function loadDB(){
     login_user:'Mr. Zimbermann',
     login_pass:'admin'
   };
+  // migrate / seed user profiles
+  if(!DB.users || !DB.users.length){
+    DB.users = [
+      {
+        id:'u_admin',
+        name: DB.settings.login_user || 'Mr. Zimbermann',
+        password: DB.settings.login_pass || 'admin',
+        role:'Administrator',
+        isDemo:false
+      }
+    ];
+  }
+  // always make sure a passwordless demo profile exists
+  if(!DB.users.some(u=>u.isDemo)){
+    DB.users.push({ id:'u_demo', name:'Demo User', password:null, role:'Demo Account', isDemo:true });
+  }
   saveDB();
 }
 
@@ -410,24 +441,116 @@ function defaultProducts(){
    AUTH
    ======================================================================== */
 let currentUser = '';
+let currentUserId = '';
+let selectedProfileId = '';
+
+function initials(name){ return name.trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+
+function renderLoginProfiles(){
+  const list = document.getElementById('login-profile-list');
+  list.innerHTML = DB.users.map(u=>`
+    <div class="profile-card ${u.isDemo?'demo-card':''}" onclick="selectProfile('${u.id}')">
+      <div class="pc-avatar">${initials(u.name)}</div>
+      <div>
+        <div class="pc-name">${u.name}</div>
+        <div class="pc-role">${u.role}</div>
+      </div>
+      ${u.isDemo ? '<div class="pc-badge">No password</div>' : `<button class="pc-del" title="Delete profile" onclick="event.stopPropagation();deleteProfile('${u.id}')">✕</button>`}
+    </div>
+  `).join('');
+}
+
+function selectProfile(id){
+  const user = DB.users.find(u=>u.id===id);
+  if(!user) return;
+  document.getElementById('login-error').textContent='';
+  if(user.isDemo || !user.password){
+    loginAs(user);
+    return;
+  }
+  selectedProfileId = id;
+  document.getElementById('login-pass-name').textContent = user.name;
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-pass-section').style.display='block';
+  document.getElementById('login-profile-list').style.display='none';
+  document.getElementById('login-pass').focus();
+}
+
+function backToProfiles(){
+  selectedProfileId='';
+  document.getElementById('login-pass-section').style.display='none';
+  document.getElementById('login-profile-list').style.display='flex';
+  document.getElementById('login-error').textContent='';
+}
+
 function handleLogin(){
-  const user = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value;
   const err = document.getElementById('login-error');
-  if(!user){ err.textContent='Please enter your operator name.'; return; }
-  if(pass !== DB.settings.login_pass){ err.textContent='Incorrect password.'; return; }
-  currentUser = user;
-  document.getElementById('user-display-name').textContent = user;
-  const initials = user.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-  document.getElementById('user-avatar-txt').textContent = initials;
+  const user = DB.users.find(u=>u.id===selectedProfileId);
+  if(!user){ err.textContent='Select a profile first.'; return; }
+  if(pass !== user.password){ err.textContent='Incorrect password.'; return; }
+  loginAs(user);
+}
+
+function loginAs(user){
+  currentUser = user.name;
+  currentUserId = user.id;
+  document.getElementById('user-display-name').textContent = user.name;
+  document.getElementById('user-role-label').textContent = user.role;
+  document.getElementById('user-avatar-txt').textContent = initials(user.name);
+  document.getElementById('login-error').textContent='';
   document.getElementById('login-screen').classList.add('hide');
+  if(user.isDemo) toast('Logged in as Demo User — no password required','success');
   navigate('dashboard');
 }
+
 function logOut(){
   document.getElementById('login-screen').classList.remove('hide');
-  document.getElementById('login-user').value='';
-  document.getElementById('login-pass').value='';
-  document.getElementById('login-error').textContent='';
+  backToProfiles();
+  renderLoginProfiles();
+}
+
+function openCreateProfileModal(){
+  openModal('Create New Profile', `
+    <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="np-name" placeholder="e.g. Jane Mwakasege"></div>
+    <div class="form-group"><label class="form-label">Role</label>
+      <select class="form-control" id="np-role">
+        <option>Administrator</option>
+        <option>Manager</option>
+        <option>Cashier / Employee</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Password (leave blank for no password)</label><input class="form-control" id="np-pass" type="password" placeholder="Optional"></div>
+  `, `
+    <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary btn-sm" onclick="createProfile()">Create Profile</button>
+  `);
+}
+
+function createProfile(){
+  const name = document.getElementById('np-name').value.trim();
+  const role = document.getElementById('np-role').value;
+  const pass = document.getElementById('np-pass').value;
+  if(!name){ toast('Please enter a name','error'); return; }
+  if(DB.users.some(u=>u.name.toLowerCase()===name.toLowerCase())){ toast('A profile with that name already exists','error'); return; }
+  DB.users.push({ id: uid(), name, password: pass || null, role, isDemo:false });
+  saveDB();
+  closeModal();
+  renderLoginProfiles();
+  if(document.getElementById('settings-profiles-list')) renderSettingsProfiles();
+  toast('Profile created','success');
+}
+
+function deleteProfile(id){
+  const user = DB.users.find(u=>u.id===id);
+  if(!user || user.isDemo) return;
+  if(DB.users.length<=1){ toast('At least one profile must remain','error'); return; }
+  if(!confirm(`Delete profile "${user.name}"?`)) return;
+  DB.users = DB.users.filter(u=>u.id!==id);
+  saveDB();
+  renderLoginProfiles();
+  if(document.getElementById('settings-profiles-list')) renderSettingsProfiles();
+  toast('Profile deleted','success');
 }
 
 /* ========================================================================
@@ -1319,14 +1442,19 @@ renderers.settings = function(el){
       <div class="form-group"><label class="form-label">Currency Symbol</label><input class="form-control" id="s-cur" value="${s.currency||'TZS'}"></div>
       <div class="form-group"><label class="form-label">VAT Rate (%)</label><input class="form-control" id="s-vat" type="number" value="${s.vat_rate||18}"></div>
       <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save Profile</button>
-    </div>
-    <div class="card card-pad">
-      <div class="settings-section-title">Security & Access</div>
-      <div class="form-group"><label class="form-label">Login Username</label><input class="form-control" id="s-user" value="${s.login_user||''}"></div>
-      <div class="form-group"><label class="form-label">Current Password</label><input class="form-control" id="s-cur-pass" type="password" placeholder="Enter current password"></div>
+
+      <div class="settings-section-title" style="margin-top:1.5rem;">My Password</div>
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Updates the password for your current profile (<strong>${currentUser||'—'}</strong>).</p>
+      <div class="form-group"><label class="form-label">Current Password</label><input class="form-control" id="s-cur-pass" type="password" placeholder="Leave blank if you have none"></div>
       <div class="form-group"><label class="form-label">New Password</label><input class="form-control" id="s-new-pass" type="password" placeholder="New password"></div>
       <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-control" id="s-conf-pass" type="password" placeholder="Repeat new password"></div>
       <button class="btn btn-primary btn-sm" onclick="savePassword()">Update Password</button>
+    </div>
+    <div class="card card-pad">
+      <div class="settings-section-title">User Profiles</div>
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;">Manage the operator profiles that can log in to this workstation.</p>
+      <div id="settings-profiles-list" style="display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1rem;"></div>
+      <button class="btn btn-primary btn-sm" onclick="openCreateProfileModal()">+ Create New Profile</button>
 
       <div class="settings-section-title" style="margin-top:1.5rem;">Data Management</div>
       <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;">Export all data as a JSON backup file, or import a previously exported backup.</p>
@@ -1337,7 +1465,23 @@ renderers.settings = function(el){
       </div>
     </div>
   </div>`;
+  renderSettingsProfiles();
 };
+
+function renderSettingsProfiles(){
+  const wrap = document.getElementById('settings-profiles-list');
+  if(!wrap) return;
+  wrap.innerHTML = DB.users.map(u=>`
+    <div class="profile-card ${u.isDemo?'demo-card':''}" style="cursor:default;">
+      <div class="pc-avatar">${initials(u.name)}</div>
+      <div>
+        <div class="pc-name">${u.name}${u.id===currentUserId?' (you)':''}</div>
+        <div class="pc-role">${u.role}${u.password?'':' · no password'}</div>
+      </div>
+      ${u.isDemo ? '<div class="pc-badge">Demo</div>' : `<button class="pc-del" title="Delete profile" onclick="deleteProfile('${u.id}')">✕</button>`}
+    </div>
+  `).join('');
+}
 
 function saveSettings(){
   const s = DB.settings;
@@ -1354,11 +1498,13 @@ function savePassword(){
   const cur = document.getElementById('s-cur-pass').value;
   const nw = document.getElementById('s-new-pass').value;
   const conf = document.getElementById('s-conf-pass').value;
-  if(cur !== DB.settings.login_pass){ toast('Current password incorrect','error'); return; }
+  const user = DB.users.find(u=>u.id===currentUserId);
+  if(!user){ toast('No active profile found','error'); return; }
+  if(user.isDemo){ toast('The Demo profile cannot have a password','error'); return; }
+  if((user.password||'') !== cur){ toast('Current password incorrect','error'); return; }
   if(!nw){ toast('Enter a new password','error'); return; }
   if(nw!==conf){ toast('Passwords do not match','error'); return; }
-  DB.settings.login_user = document.getElementById('s-user').value||DB.settings.login_user;
-  DB.settings.login_pass = nw;
+  user.password = nw;
   saveDB(); toast('Password updated successfully','success');
   document.getElementById('s-cur-pass').value='';
   document.getElementById('s-new-pass').value='';
@@ -1397,9 +1543,9 @@ function importData(e){
    BOOT
    ======================================================================== */
 loadDB();
+renderLoginProfiles();
 // Allow Enter key in login
 document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') handleLogin(); });
-document.getElementById('login-user').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('login-pass').focus(); });
 </script>
 </body>
 </html>
