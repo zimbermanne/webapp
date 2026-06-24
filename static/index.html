@@ -374,6 +374,7 @@ function loadDB(){
   if(!DB.sales) DB.sales = [];
   if(!DB.creditors) DB.creditors = [];
   if(!DB.clients) DB.clients = [];
+  if(!DB.expenses) DB.expenses = [];
   if(!DB.settings) DB.settings = {
     business_name:'Zimbermanne Company Limited',
     tin:'202-013-449',
@@ -1290,7 +1291,7 @@ renderers['sales-history'] = function(el){
               <td class="mono">${fmt(s.subtotal)}</td>
               <td class="mono">${fmt(s.vat)}</td>
               <td class="mono"><strong>${fmt(s.total)}</strong></td>
-              <td><button class="btn btn-ghost btn-sm" onclick="showReceipt(${JSON.stringify(s).split("'").join("&#39;")})">🧾</button></td>
+              <td><button class="btn btn-ghost btn-sm" onclick="showReceiptById('${s.id}')">&#x1F9FE;</button></td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -1298,6 +1299,11 @@ renderers['sales-history'] = function(el){
     }
   </div>`;
 };
+
+function showReceiptById(id){
+  const s = (DB.sales||[]).find(x=>x.id===id);
+  if(s) showReceipt(s); else toast('Receipt not found','error');
+}
 
 function clearAllSales(){
   if(!confirm('Delete ALL sales records? This cannot be undone.')) return;
