@@ -236,6 +236,28 @@
         .user-details strong { display: block; font-size: 13.5px; }
         .user-details span { font-size: 11px; color: var(--accent-gold); text-transform: uppercase; }
         .btn-logout-link { background: none; border: none; color: var(--hl-red); font-size: 12px; font-weight: 600; cursor: pointer; }
+        /* AI Agent styles */
+        .agent-msg { display:flex; gap:10px; }
+        .agent-msg--bot .agent-msg-bubble { background:var(--canvas-base); border:1px solid var(--border-clean); border-radius:0 12px 12px 12px; padding:12px 16px; font-size:13.5px; line-height:1.6; max-width:90%; }
+        .agent-msg--user { justify-content:flex-end; }
+        .agent-msg--user .agent-msg-bubble { background:var(--navy-core); color:white; border-radius:12px 12px 0 12px; padding:10px 14px; font-size:13.5px; max-width:80%; }
+        .agent-msg-typing .agent-msg-bubble { font-size:20px; letter-spacing:4px; color:var(--text-muted); }
+        .btn-quick-query { padding:8px 12px; background:var(--canvas-base); border:1px solid var(--border-clean); border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; text-align:left; transition:all 0.15s; }
+        .btn-quick-query:hover { background:var(--navy-core); color:white; border-color:var(--navy-core); }
+        .compare-card { background:var(--canvas-base); border-radius:8px; padding:12px; }
+        .compare-card h5 { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; letter-spacing:0.8px; }
+        .compare-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-bottom:4px; }
+        .change-badge { font-size:11px; font-weight:700; padding:2px 6px; border-radius:4px; }
+        .change-up { background:#d4edda; color:#155724; }
+        .change-down { background:#f8d7da; color:#721c24; }
+        .change-flat { background:#e2e3e5; color:#383d41; }
+        /* PDF export line items */
+        .pdf-item-row { display:flex; gap:8px; align-items:center; }
+        .pdf-item-row input { padding:7px 10px; border:1px solid var(--border-clean); border-radius:6px; font-size:13px; }
+        .pdf-item-row .desc-inp { flex:3; }
+        .pdf-item-row .qty-inp { flex:0.8; }
+        .pdf-item-row .price-inp { flex:1.2; }
+        .pdf-item-row .remove-btn { background:none; border:none; color:var(--hl-red); cursor:pointer; font-size:16px; padding:0 4px; }
 
         /* MAIN CONTENT APPLICATION VIEWPORTS */
         .app-viewport {
@@ -394,16 +416,6 @@
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Sign In to Engine</button>
                 </form>
-                <div class="oauth-divider"><span>or</span></div>
-                <a href="/api/auth/google/login" class="btn-google-login">
-                    <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    Continue with Google
-                </a>
                 <div class="auth-toggle-link">
                     Need a new store? <span onclick="toggleAuthForms(true)">Create Profile here</span>
                 </div>
@@ -466,6 +478,13 @@
                 <nav class="sidebar-nav">
                     <a href="#" class="nav-item" data-section="debtors">👥 Debtors (Deni)</a>
                     <a href="#" class="nav-item" data-section="reports">📈 Profit & Loss (P&L)</a>
+                </nav>
+
+                <div class="nav-segment-label">TOOLS</div>
+                <nav class="sidebar-nav">
+                    <a href="#" class="nav-item" data-section="agent">🤖 Zimbi AI Agent</a>
+                    <a href="#" class="nav-item" data-section="import">📥 Import Stock</a>
+                    <a href="#" class="nav-item" data-section="export">🧾 Export Invoice/Quote</a>
                 </nav>
 
                 <div class="sidebar-user-anchor">
@@ -648,6 +667,190 @@
                             <div class="kpi-box text-highlight-gold"><span>Net Yield Margin</span><h2 id="pl-net" class="mono-font">0 TZS</h2></div>
                         </div>
                     </section>
+
+                    <!-- ===== ZIMBI AI AGENT ===== -->
+                    <section id="agent-section" class="ui-section hidden">
+                        <div style="display:grid; grid-template-columns:1fr 320px; gap:20px; height:calc(100vh - 130px);">
+                            <!-- Chat panel -->
+                            <div class="card" style="display:flex; flex-direction:column; padding:0; overflow:hidden;">
+                                <div style="padding:20px 24px; border-bottom:1px solid var(--border-clean); display:flex; align-items:center; gap:12px;">
+                                    <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--navy-core),var(--accent-gold));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
+                                    <div>
+                                        <h3 style="font-size:15px; font-weight:700;">Zimbi — Business Intelligence Agent</h3>
+                                        <span style="font-size:11px; color:var(--text-muted);">Powered by Claude AI · Analyses your live business data</span>
+                                    </div>
+                                    <div style="margin-left:auto;">
+                                        <select id="agent-period-select" style="padding:6px 10px; border:1px solid var(--border-clean); border-radius:6px; font-size:12px; background:white;">
+                                            <option value="day">Today</option>
+                                            <option value="month" selected>This Month</option>
+                                            <option value="year">This Year</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="agent-chat-messages" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px;">
+                                    <div class="agent-msg agent-msg--bot">
+                                        <div class="agent-msg-bubble">👋 Habari! I'm <strong>Zimbi</strong>, your AI business analyst. Ask me anything about your sales, profit, stock levels, or trends — I have access to your live data. Try:<br><br>
+                                        • "Compare this month vs last month"<br>
+                                        • "Which products are selling best?"<br>
+                                        • "What's our profit margin this year?"<br>
+                                        • "Alert me on any concerning trends"</div>
+                                    </div>
+                                </div>
+                                <div style="padding:16px 20px; border-top:1px solid var(--border-clean); display:flex; gap:10px;">
+                                    <input type="text" id="agent-input" placeholder="Ask Zimbi anything about your business..." style="flex:1; padding:10px 14px; border:1.5px solid var(--border-clean); border-radius:8px; font-size:14px; outline:none;" onkeydown="if(event.key==='Enter')sendAgentMessage()">
+                                    <button onclick="sendAgentMessage()" id="agent-send-btn" style="padding:10px 20px; background:var(--navy-core); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; white-space:nowrap;">Send ↑</button>
+                                </div>
+                            </div>
+
+                            <!-- Comparison panel -->
+                            <div style="display:flex; flex-direction:column; gap:16px; overflow-y:auto;">
+                                <div class="card" style="padding:20px;">
+                                    <h4 style="font-size:13px; font-weight:700; margin-bottom:14px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;">📊 Period Comparison</h4>
+                                    <div id="compare-loading" style="color:var(--text-muted); font-size:13px;">Loading...</div>
+                                    <div id="compare-cards" style="display:flex; flex-direction:column; gap:12px;"></div>
+                                </div>
+                                <div class="card" style="padding:20px;">
+                                    <h4 style="font-size:13px; font-weight:700; margin-bottom:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;">⚡ Quick Queries</h4>
+                                    <div style="display:flex; flex-direction:column; gap:8px;">
+                                        <button onclick="quickQuery('Give me a full financial summary and highlight any issues')" class="btn-quick-query">Full Financial Summary</button>
+                                        <button onclick="quickQuery('Compare this month vs last month in detail')" class="btn-quick-query">Month vs Last Month</button>
+                                        <button onclick="quickQuery('Compare this year vs last year performance')" class="btn-quick-query">Year vs Last Year</button>
+                                        <button onclick="quickQuery('Which products are my top performers and which are slow movers?')" class="btn-quick-query">Top & Slow Products</button>
+                                        <button onclick="quickQuery('What are the low stock items I need to reorder urgently?')" class="btn-quick-query">Low Stock Alerts</button>
+                                        <button onclick="quickQuery('Analyse my daily sales trend and identify any patterns')" class="btn-quick-query">Daily Sales Trend</button>
+                                        <button onclick="quickQuery('What is my gross profit margin and how can I improve it?')" class="btn-quick-query">Profit Margin Analysis</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ===== STOCK IMPORT ===== -->
+                    <section id="import-section" class="ui-section hidden">
+                        <div style="max-width:700px; margin:0 auto; display:flex; flex-direction:column; gap:20px;">
+                            <div class="card">
+                                <h3 style="margin-bottom:6px;">📥 Import Stock from CSV / Excel</h3>
+                                <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Upload a CSV or Excel file to bulk-add or update inventory items. Download the template to see the required format.</p>
+
+                                <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                                    <button onclick="downloadImportTemplate()" class="btn" style="background:var(--navy-core); color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-size:13px;">⬇ Download Template CSV</button>
+                                </div>
+
+                                <div id="import-drop-zone" style="border:2px dashed var(--border-clean); border-radius:12px; padding:40px; text-align:center; cursor:pointer; background:var(--canvas-base); transition:all 0.2s;" onclick="document.getElementById('import-file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent-gold)'" ondrop="handleImportDrop(event)">
+                                    <div style="font-size:40px; margin-bottom:10px;">📂</div>
+                                    <p style="font-weight:600; color:var(--text-primary);">Click to select file or drag & drop here</p>
+                                    <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Supports .csv, .xlsx, .xls files</p>
+                                    <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImportFileSelect(this.files[0])">
+                                </div>
+
+                                <div style="margin-top:16px; display:flex; align-items:center; gap:10px;">
+                                    <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+                                        <input type="checkbox" id="import-update-existing" style="width:16px; height:16px;">
+                                        <span>Update existing items (add to quantity, update price)</span>
+                                    </label>
+                                </div>
+
+                                <div id="import-selected-file" style="display:none; margin-top:12px; padding:10px 14px; background:#f0f9f0; border-radius:8px; font-size:13px; display:flex; align-items:center; gap:10px;">
+                                    <span>📄</span>
+                                    <span id="import-selected-name"></span>
+                                    <button onclick="submitImport()" id="import-submit-btn" style="margin-left:auto; padding:8px 20px; background:#2ECC71; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Import Now</button>
+                                </div>
+                            </div>
+
+                            <div id="import-result" class="card" style="display:none;">
+                                <h4 style="margin-bottom:12px;">Import Result</h4>
+                                <div id="import-result-body"></div>
+                            </div>
+
+                            <div class="card" style="background:var(--navy-core); color:white;">
+                                <h4 style="margin-bottom:10px; color:var(--accent-gold);">📋 Required CSV Format</h4>
+                                <code style="font-size:12px; display:block; line-height:1.8; color:#ccc;">
+                                    name, quantity, price, category (optional), reorder_point (optional)<br>
+                                    PVC Pipe 1/2 Inch, 100, 2500, Plumbing, 20<br>
+                                    Cement 50kg Bag, 50, 35000, Building Materials, 10<br>
+                                    Steel Rod 12mm, 200, 8500, Steel, 15
+                                </code>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ===== INVOICE / QUOTE EXPORT ===== -->
+                    <section id="export-section" class="ui-section hidden">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:1100px; margin:0 auto;">
+                            <div class="card">
+                                <h3 style="margin-bottom:16px;">🧾 Generate Invoice / Quote PDF</h3>
+
+                                <div style="display:flex; gap:8px; margin-bottom:16px;">
+                                    <button onclick="setDocType('invoice')" id="doc-type-invoice" class="btn btn-success" style="flex:1;">📄 Invoice</button>
+                                    <button onclick="setDocType('quote')" id="doc-type-quote" class="btn" style="flex:1; background:var(--navy-core); color:white;">📋 Quote</button>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Invoice / Quote Number</label>
+                                    <input type="text" id="pdf-inv-number" placeholder="e.g. INV-2026-001" value="INV-2026-001">
+                                </div>
+                                <div class="form-group">
+                                    <label>Date</label>
+                                    <input type="date" id="pdf-date">
+                                </div>
+                                <div class="form-group">
+                                    <label>Customer / Company Name *</label>
+                                    <input type="text" id="pdf-customer" placeholder="e.g. Singitha Holdings Ltd">
+                                </div>
+                                <div class="form-group">
+                                    <label>Customer Address</label>
+                                    <input type="text" id="pdf-address" placeholder="e.g. Sinza, Dar es Salaam">
+                                </div>
+                                <div class="form-group">
+                                    <label>TIN Number (optional)</label>
+                                    <input type="text" id="pdf-tin" placeholder="e.g. 123-456-789">
+                                </div>
+                                <div class="form-group">
+                                    <label>Notes (optional)</label>
+                                    <textarea id="pdf-notes" style="width:100%; padding:8px; border:1px solid var(--border-clean); border-radius:6px; font-size:13px; resize:vertical;" rows="2" placeholder="Payment due within 30 days..."></textarea>
+                                </div>
+
+                                <h4 style="margin:16px 0 10px; font-size:13px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Line Items</h4>
+                                <div id="pdf-items-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+                                <button onclick="addPdfItem()" style="margin-top:10px; padding:8px 14px; background:transparent; border:1.5px dashed var(--border-clean); border-radius:6px; cursor:pointer; font-size:13px; color:var(--text-muted); width:100%;">+ Add Line Item</button>
+
+                                <div style="margin-top:20px;">
+                                    <button onclick="generatePdf()" style="width:100%; padding:12px; background:var(--navy-core); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700; font-size:14px;" id="pdf-generate-btn">⬇ Generate & Download PDF</button>
+                                </div>
+                            </div>
+
+                            <!-- Preview totals -->
+                            <div>
+                                <div class="card" style="margin-bottom:16px;">
+                                    <h4 style="margin-bottom:14px; color:var(--text-muted); font-size:12px; text-transform:uppercase; letter-spacing:0.8px;">Live Preview</h4>
+                                    <div style="border:1px solid var(--border-clean); border-radius:8px; padding:16px; min-height:200px; background:white;">
+                                        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
+                                            <div>
+                                                <div style="font-size:18px; font-weight:700; color:var(--navy-core);">Zimbermanne</div>
+                                                <div style="font-size:11px; color:var(--accent-gold); font-weight:600;">Hardware & Building Materials</div>
+                                            </div>
+                                            <div id="preview-doc-type" style="font-size:22px; font-weight:700; color:#2ECC71;">INVOICE</div>
+                                        </div>
+                                        <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">To: <span id="preview-customer">—</span></div>
+                                        <table style="width:100%; font-size:11px; border-collapse:collapse;">
+                                            <thead><tr style="background:var(--navy-core); color:white;"><th style="padding:6px; text-align:left;">Item</th><th style="padding:6px; text-align:right;">Qty</th><th style="padding:6px; text-align:right;">Total</th></tr></thead>
+                                            <tbody id="preview-items"></tbody>
+                                        </table>
+                                        <div style="margin-top:10px; text-align:right; font-size:12px;">
+                                            <div>Subtotal: <b id="preview-subtotal">0 TZS</b></div>
+                                            <div style="color:var(--text-muted);">VAT 18%: <span id="preview-vat">0 TZS</span></div>
+                                            <div style="font-size:14px; font-weight:700; color:#2ECC71; margin-top:4px;">TOTAL: <span id="preview-total">0 TZS</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card" style="background:#f8f9ff;">
+                                    <h4 style="margin-bottom:10px; font-size:12px; color:var(--text-muted); text-transform:uppercase;">Recent Exports</h4>
+                                    <div id="recent-exports-list" style="font-size:13px; color:var(--text-muted);">No exports yet this session.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </main>
         </div>
@@ -815,6 +1018,8 @@
                 case 'expenses': syncExpensesTable(); break;
                 case 'debtors': syncDebtorsTable(); break;
                 case 'reports': runProfitLossReport(); break;
+                case 'agent': loadCompareCards(); break;
+                case 'export': initExportSection(); break;
             }
         }
 
@@ -1169,6 +1374,310 @@
             document.getElementById('modal-layer').classList.add('hidden');
             document.getElementById('modal-container-body').innerHTML = '';
         }
+
+        // ============================================================
+        // ZIMBI AI AGENT
+        // ============================================================
+        let agentBusy = false;
+
+        async function sendAgentMessage() {
+            if (agentBusy) return;
+            const input = document.getElementById('agent-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+            input.value = '';
+            appendAgentMsg(msg, 'user');
+            await callAgent(msg);
+        }
+
+        async function quickQuery(msg) {
+            if (agentBusy) return;
+            appendAgentMsg(msg, 'user');
+            await callAgent(msg);
+        }
+
+        async function callAgent(msg) {
+            agentBusy = true;
+            document.getElementById('agent-send-btn').disabled = true;
+            const period = document.getElementById('agent-period-select').value;
+            const typingId = appendAgentMsg('...', 'bot', true);
+            try {
+                const data = await apiRequest('/agent/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({ message: msg, period })
+                });
+                removeAgentMsg(typingId);
+                appendAgentMsg(data.reply, 'bot');
+            } catch(e) {
+                removeAgentMsg(typingId);
+                appendAgentMsg('⚠️ Error: ' + (e.message || 'Could not reach AI service. Check ANTHROPIC_API_KEY is set on server.'), 'bot');
+            } finally {
+                agentBusy = false;
+                document.getElementById('agent-send-btn').disabled = false;
+            }
+        }
+
+        function appendAgentMsg(text, role, isTyping=false) {
+            const container = document.getElementById('agent-chat-messages');
+            const id = 'msg-' + Date.now();
+            const div = document.createElement('div');
+            div.className = `agent-msg agent-msg--${role}${isTyping?' agent-msg-typing':''}`;
+            div.id = id;
+            // Convert markdown-ish text to HTML
+            const formatted = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+            div.innerHTML = `<div class="agent-msg-bubble">${formatted}</div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        function removeAgentMsg(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        async function loadCompareCards() {
+            try {
+                const data = await apiRequest('/agent/compare');
+                document.getElementById('compare-loading').style.display = 'none';
+                const container = document.getElementById('compare-cards');
+                container.innerHTML = '';
+
+                const periods = [
+                    { label: '📅 Daily', key: 'daily', a: 'Today', b: 'Yesterday' },
+                    { label: '📆 Monthly', key: 'monthly', a: 'This Month', b: 'Last Month' },
+                    { label: '🗓️ Yearly', key: 'yearly', a: 'This Year', b: 'Last Year' },
+                ];
+
+                periods.forEach(p => {
+                    const d = data[p.key];
+                    const chg = d.change_pct;
+                    const badge = chg > 0 ? `<span class="change-badge change-up">▲ ${chg}%</span>` : chg < 0 ? `<span class="change-badge change-down">▼ ${Math.abs(chg)}%</span>` : `<span class="change-badge change-flat">─ 0%</span>`;
+                    const revA = Object.values(d)[0].revenue;
+                    const revB = Object.values(d)[1].revenue;
+                    const txA = Object.values(d)[0].transactions;
+                    const txB = Object.values(d)[1].transactions;
+                    container.innerHTML += `
+                    <div class="compare-card">
+                        <h5>${p.label} ${badge}</h5>
+                        <div class="compare-row"><span>${p.a}</span><strong>${Number(revA).toLocaleString()} TZS</strong></div>
+                        <div class="compare-row"><span>${p.b}</span><span style="color:var(--text-muted)">${Number(revB).toLocaleString()} TZS</span></div>
+                        <div class="compare-row" style="margin-top:4px; font-size:11px; color:var(--text-muted);"><span>Transactions: ${txA} vs ${txB}</span></div>
+                    </div>`;
+                });
+            } catch(e) {
+                document.getElementById('compare-loading').textContent = 'Could not load comparison data.';
+            }
+        }
+
+        // ============================================================
+        // STOCK IMPORT
+        // ============================================================
+        let importFile = null;
+
+        function handleImportFileSelect(file) {
+            if (!file) return;
+            importFile = file;
+            document.getElementById('import-selected-name').textContent = file.name;
+            document.getElementById('import-selected-file').style.display = 'flex';
+        }
+
+        function handleImportDrop(e) {
+            e.preventDefault();
+            document.getElementById('import-drop-zone').style.borderColor = '';
+            const file = e.dataTransfer.files[0];
+            if (file) handleImportFileSelect(file);
+        }
+
+        async function downloadImportTemplate() {
+            const a = document.createElement('a');
+            a.href = API_BASE_URL + '/agent/import/template';
+            a.download = 'stock_import_template.csv';
+            // Need auth header — fetch and create blob
+            try {
+                const resp = await fetch(a.href, { headers: { Authorization: 'Bearer ' + authToken } });
+                const blob = await resp.blob();
+                a.href = URL.createObjectURL(blob);
+                a.click();
+            } catch(e) { alert('Could not download template'); }
+        }
+
+        async function submitImport() {
+            if (!importFile) return;
+            const btn = document.getElementById('import-submit-btn');
+            btn.textContent = 'Importing...';
+            btn.disabled = true;
+
+            const updateExisting = document.getElementById('import-update-existing').checked;
+            const formData = new FormData();
+            formData.append('file', importFile);
+
+            try {
+                const resp = await fetch(`${API_BASE_URL}/agent/import/stock?update_existing=${updateExisting}`, {
+                    method: 'POST',
+                    headers: { Authorization: 'Bearer ' + authToken },
+                    body: formData
+                });
+                const data = await resp.json();
+                const resultDiv = document.getElementById('import-result');
+                resultDiv.style.display = 'block';
+                const isOk = resp.ok;
+                document.getElementById('import-result-body').innerHTML = isOk ? `
+                    <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
+                        <div style="padding:10px 20px; background:#d4edda; border-radius:8px; text-align:center;"><div style="font-size:22px; font-weight:700; color:#155724;">${data.created}</div><div style="font-size:11px; color:#155724;">Created</div></div>
+                        <div style="padding:10px 20px; background:#d1ecf1; border-radius:8px; text-align:center;"><div style="font-size:22px; font-weight:700; color:#0c5460;">${data.updated}</div><div style="font-size:11px; color:#0c5460;">Updated</div></div>
+                        <div style="padding:10px 20px; background:#f8d7da; border-radius:8px; text-align:center;"><div style="font-size:22px; font-weight:700; color:#721c24;">${data.errors}</div><div style="font-size:11px; color:#721c24;">Errors</div></div>
+                    </div>
+                    ${data.error_details.length ? '<p style="font-size:12px; color:red;"><b>Errors:</b><br>' + data.error_details.map(e=>`Row ${e.row}: ${e.error} ${e.name?'('+e.name+')':''}`).join('<br>') + '</p>' : ''}
+                    <p style="font-size:12px; color:var(--text-muted);">Go to Inventory to see imported items.</p>
+                ` : `<p style="color:red;">${data.detail || JSON.stringify(data)}</p>`;
+            } catch(e) {
+                document.getElementById('import-result').style.display = 'block';
+                document.getElementById('import-result-body').innerHTML = '<p style="color:red;">Import failed: ' + e.message + '</p>';
+            } finally {
+                btn.textContent = 'Import Now';
+                btn.disabled = false;
+            }
+        }
+
+        // ============================================================
+        // PDF INVOICE / QUOTE EXPORT
+        // ============================================================
+        let pdfDocType = 'invoice';
+        let pdfItems = [];
+        let recentExports = [];
+
+        function setDocType(type) {
+            pdfDocType = type;
+            const inv = document.getElementById('doc-type-invoice');
+            const qt = document.getElementById('doc-type-quote');
+            if (type === 'invoice') {
+                inv.style.background = '#2ECC71'; inv.style.color = 'white';
+                qt.style.background = 'transparent'; qt.style.color = 'var(--text-primary)'; qt.style.border = '1px solid var(--border-clean)';
+                document.getElementById('preview-doc-type').textContent = 'INVOICE';
+                document.getElementById('preview-doc-type').style.color = '#2ECC71';
+            } else {
+                qt.style.background = '#2980B9'; qt.style.color = 'white';
+                inv.style.background = 'transparent'; inv.style.color = 'var(--text-primary)'; inv.style.border = '1px solid var(--border-clean)';
+                document.getElementById('preview-doc-type').textContent = 'QUOTE';
+                document.getElementById('preview-doc-type').style.color = '#2980B9';
+            }
+        }
+
+        function addPdfItem() {
+            const id = Date.now();
+            pdfItems.push({ id, desc: '', qty: 1, price: 0 });
+            renderPdfItems();
+        }
+
+        function removePdfItem(id) {
+            pdfItems = pdfItems.filter(i => i.id !== id);
+            renderPdfItems();
+        }
+
+        function renderPdfItems() {
+            const list = document.getElementById('pdf-items-list');
+            list.innerHTML = pdfItems.map(item => `
+                <div class="pdf-item-row">
+                    <input class="desc-inp" type="text" placeholder="Description" value="${item.desc}" onchange="updatePdfItem(${item.id},'desc',this.value)" oninput="updatePdfItem(${item.id},'desc',this.value)">
+                    <input class="qty-inp" type="number" placeholder="Qty" value="${item.qty}" min="0" onchange="updatePdfItem(${item.id},'qty',this.value)" oninput="updatePdfItem(${item.id},'qty',this.value)">
+                    <input class="price-inp" type="number" placeholder="Unit Price" value="${item.price}" min="0" onchange="updatePdfItem(${item.id},'price',this.value)" oninput="updatePdfItem(${item.id},'price',this.value)">
+                    <button class="remove-btn" onclick="removePdfItem(${item.id})">✕</button>
+                </div>
+            `).join('');
+            updatePdfPreview();
+        }
+
+        function updatePdfItem(id, field, value) {
+            const item = pdfItems.find(i => i.id === id);
+            if (!item) return;
+            item[field] = (field === 'qty' || field === 'price') ? parseFloat(value) || 0 : value;
+            updatePdfPreview();
+        }
+
+        function updatePdfPreview() {
+            document.getElementById('preview-customer').textContent = document.getElementById('pdf-customer')?.value || '—';
+            const previewItems = document.getElementById('preview-items');
+            let subtotal = 0;
+            previewItems.innerHTML = pdfItems.map(item => {
+                const total = (item.qty || 0) * (item.price || 0);
+                subtotal += total;
+                return `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 6px;">${item.desc || '—'}</td><td style="padding:4px 6px; text-align:right;">${item.qty}</td><td style="padding:4px 6px; text-align:right;">${total.toLocaleString()}</td></tr>`;
+            }).join('');
+            const vat = subtotal * 0.18;
+            document.getElementById('preview-subtotal').textContent = subtotal.toLocaleString() + ' TZS';
+            document.getElementById('preview-vat').textContent = vat.toLocaleString() + ' TZS';
+            document.getElementById('preview-total').textContent = (subtotal + vat).toLocaleString() + ' TZS';
+        }
+
+        async function generatePdf() {
+            const customer = document.getElementById('pdf-customer').value.trim();
+            if (!customer) { alert('Customer name is required'); return; }
+            if (!pdfItems.length) { alert('Add at least one line item'); return; }
+
+            const btn = document.getElementById('pdf-generate-btn');
+            btn.textContent = '⏳ Generating...';
+            btn.disabled = true;
+
+            const payload = {
+                invoice_number: document.getElementById('pdf-inv-number').value || 'INV-001',
+                date: document.getElementById('pdf-date').value,
+                customer_name: customer,
+                customer_address: document.getElementById('pdf-address').value,
+                customer_tin: document.getElementById('pdf-tin').value,
+                notes: document.getElementById('pdf-notes').value,
+                type: pdfDocType,
+                items: pdfItems.map(i => ({ description: i.desc, quantity: i.qty, unit_price: i.price }))
+            };
+
+            try {
+                const resp = await fetch(`${API_BASE_URL}/agent/export/invoice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
+                    body: JSON.stringify(payload)
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'PDF generation failed');
+                }
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Zimbermanne_${pdfDocType === 'quote' ? 'Quote' : 'Invoice'}_${payload.invoice_number}.pdf`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                // Track recent exports
+                recentExports.unshift({ type: pdfDocType, no: payload.invoice_number, customer, ts: new Date().toLocaleTimeString() });
+                if (recentExports.length > 5) recentExports.pop();
+                document.getElementById('recent-exports-list').innerHTML = recentExports.map(e =>
+                    `<div style="margin-bottom:6px; padding:6px 10px; background:white; border-radius:6px; font-size:12px;">📄 ${e.type === 'quote' ? 'Quote' : 'Invoice'} #${e.no} — ${e.customer} <span style="color:var(--text-muted); float:right;">${e.ts}</span></div>`
+                ).join('');
+            } catch(e) {
+                alert('Error: ' + e.message);
+            } finally {
+                btn.textContent = '⬇ Generate & Download PDF';
+                btn.disabled = false;
+            }
+        }
+
+        // Init PDF section with one blank item and today's date
+        function initExportSection() {
+            if (pdfItems.length === 0) { addPdfItem(); }
+            const todayInput = document.getElementById('pdf-date');
+            if (todayInput && !todayInput.value) {
+                todayInput.value = new Date().toISOString().split('T')[0];
+            }
+        }
+
+        // Wire customer name preview update
+        document.addEventListener('DOMContentLoaded', () => {
+            const custInp = document.getElementById('pdf-customer');
+            if (custInp) custInp.addEventListener('input', updatePdfPreview);
+        });
     </script>
 </body>
 </html>

@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import engine, Base, get_db
 from report_generator import ReportGenerator
-from routers import auth, inventory, sales, purchases, expenses, reports, users, activity, backup
+from routers import auth, inventory, sales, purchases, expenses, reports, users, activity, backup, agent
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,6 +48,7 @@ app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(activity.router, prefix="/api/activity", tags=["activity"])
 app.include_router(backup.router, prefix="/api/backup", tags=["backup"])
+app.include_router(agent.router, prefix="/api/agent", tags=["agent"])
 
 # --- MOCK LEDGER DATA STORAGE (Replace with database models as needed) ---
 DEBTORS_LEDGER = [
