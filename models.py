@@ -10,10 +10,14 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=True)
-    hashed_password = Column(String(255), nullable=False)
-    role = Column(String(20), default="employee")  # admin, employee, manager
+    hashed_password = Column(String(255), nullable=True)   # ← nullable for Google users
+    role = Column(String(20), default="employee")           # admin, employee, manager
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Google OAuth fields
+    google_id = Column(String(100), unique=True, nullable=True, index=True)
+    auth_provider = Column(String(20), default="local")     # "local" | "google"
 
     # Relationships
     sales = relationship("Sale", back_populates="created_by_user")
@@ -106,7 +110,7 @@ class Debtor(Base):
     amount = Column(Float, nullable=False)
     contact = Column(String(20), nullable=True)
     date_owed = Column(DateTime, default=datetime.utcnow)
-    status = Column(String(20), default="pending")  # pending, paid, partial
+    status = Column(String(20), default="pending")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -118,5 +122,5 @@ class Creditor(Base):
     amount = Column(Float, nullable=False)
     contact = Column(String(20), nullable=True)
     date_owed = Column(DateTime, default=datetime.utcnow)
-    status = Column(String(20), default="pending")  # pending, paid, partial
+    status = Column(String(20), default="pending")
     created_at = Column(DateTime, default=datetime.utcnow)
