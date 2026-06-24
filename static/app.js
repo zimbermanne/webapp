@@ -1,200 +1,426 @@
-const API_BASE_URL = '/api';
+/**
+ * Zimbermanne Retail OS Engine - Frontend Client Core
+ * Synchronized with Database REST Routing Architecture
+ */
 
-let currentToken = localStorage.getItem('token');
-let currentUser = null;
+// Global State Caches (Synchronized directly with database queries via API calls)
 let catalogItemsCache = [];
-let shoppingCart = [];
+let currentPOSCart = [];
+let activeUserToken = localStorage.getItem('auth_token') || null;
+let activeUserRole = localStorage.getItem('user_role') || 'employee';
 
-const loginScreen = document.getElementById('login-screen');
-const dashboardScreen = document.getElementById('dashboard-screen');
-const loginForm = document.getElementById('login-form');
-const loginError = document.getElementById('login-error');
-
-async function apiCall(endpoint, options = {}) {
-    const headers = { 'Content-Type': 'application/json' };
-    if (currentToken) {
-        headers['Authorization'] = `Bearer ${currentToken}`;
+// --- CORE REST NETWORK HANDLER ---
+async function apiCall(endpoint, method = 'GET', body = null) {
+    const baseUrl = '/api';
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    
+    if (activeUserToken) {
+        headers['Authorization'] = `Bearer ${activeUserToken}`;
     }
+    
+    const config = {
+        method,
+        headers
+    };
+    
+    if (body && (method === 'POST' || method === 'PUT')) {
+        config.body = JSON.stringify(body);
+    }
+    
     try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            ...options,
-            headers: { ...headers, ...options.headers }
-        });
-        if (response.status === 401) { logout(); throw new Error('Unauthorized'); }
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'API breakdown');
-        return data;
+        const response = await fetch(`${baseUrl}${endpoint}`, config);
+        
+        if (response.status === 401 || response.status === 403) {
+            // Token expired or insufficient privileges
+            handleLogoutAction();
+            throw new Error("Authentication failure. Please log in again.");
+        }
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `Server responded with status code: ${response.status}`);
+        }
+        
+        return await response.json();
     } catch (error) {
-        console.error(`API Error [${endpoint}]:`, error);
+        console.error(`API Call Failure [${method} ${endpoint}]:`, error);
+        alert(`Operation Failed: ${error.message}`);
         throw error;
     }
 }
 
-function showScreen(screen) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-    screen.classList.remove('hidden');
-}
-
-// Sidebar View Controller
-document.querySelectorAll('.nav-links a[data-section]').forEach(link => {
-    link.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const section = link.dataset.section;
-        
-        document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-        
-        document.querySelectorAll('.content-section').forEach(s => s.classList.add('hidden'));
-        const targetSection = document.getElementById(`${section}-section`);
-        if (targetSection) targetSection.classList.remove('hidden');
-        
-        switch(section) {
-            case 'dashboard': loadDashboardMetrics(); break;
-            case 'pos': initializePOSModule(); break;
-            case 'reports': executeFinancialPLSummary(); loadLedgerDashboards(); break;
-        }
-    });
+// --- APP INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    setupAppViewRouting();
+    if (activeUserToken) {
+        showDashboardView();
+    } else {
+        showLoginView();
+    }
 });
 
-// POS Module Processing Engine
+function setupAppViewRouting() {
+    // Wire up navigation links
+    document.querySelectorAll('[data-target-view]').forEach(navElement => {
+        navElement.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetView = e.target.getAttribute('data-target-view');
+            switchViewContext(targetView);
+        });
+    });
+    
+    // Bind login form submission
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLoginSubmit);
+    }
+    
+    // Bind checkout submission
+    const checkoutForm = document.getElementById('pos-checkout-action');
+    if (checkoutForm) {
+        checkoutForm.addEventListener('click', handleCartCheckoutSubmit);
+    }
+}
+
+function switchViewContext(viewId) {
+    document.querySelectorAll('.app-view-panel').forEach(panel => {
+        panel.classList.add('hidden-view-state');
+    });
+    
+    const activePanel = document.getElementById(viewId);
+    if (activePanel) {
+        activePanel.classList.remove('hidden-view-state');
+    }
+    
+    // Lazy-load data depending on view focus
+    if (viewId === 'view-dashboard') loadDashboardMetrics();
+    if (viewId === 'view-pos') initializePOSModule();
+    if (viewId === 'view-debtors') loadDebtorsLedger();
+    if (viewId === 'view-creditors') loadCreditorsLedger();
+}
+
+// --- AUTHENTICATION MODULE ---
+async function handleLoginSubmit(e) {
+    e.preventDefault();
+    const usernameInput = document.getElementById('login-username').value;
+    const passwordInput = document.getElementById('login-password').value;
+    const loginButton = document.getElementById('login-submit-btn');
+    
+    if (loginButton) loginButton.disabled = true;
+    
+    try {
+        // Build URL-encoded form body expected by OAuth2PasswordBearer specification
+        const formData = new URLSearchParams();
+        formData.append('username', usernameInput);
+        formData.append('password', passwordInput);
+        
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData
+        });
+        
+        if (!response.ok) throw new Error("Invalid username or password credentials.");
+        
+        const tokenData = await response.json();
+        activeUserToken = tokenData.access_token;
+        localStorage.setItem('auth_token', activeUserToken);
+        
+        // Fetch current profile metrics to extract organizational access roles safely
+        const profile = await apiCall('/users/me');
+        activeUserRole = profile.role;
+        localStorage.setItem('user_role', activeUserRole);
+        
+        showDashboardView();
+    } catch (err) {
+        alert(err.message);
+    } finally {
+        if (loginButton) loginButton.disabled = false;
+    }
+}
+
+function handleLogoutAction() {
+    activeUserToken = null;
+    activeUserRole = 'employee';
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_role');
+    showLoginView();
+}
+
+function showLoginView() {
+    document.getElementById('auth-container').classList.remove('hidden-view-state');
+    document.getElementById('main-app-layout').classList.add('hidden-view-state');
+}
+
+function showDashboardView() {
+    document.getElementById('auth-container').classList.add('hidden-view-state');
+    document.getElementById('main-app-layout').classList.remove('hidden-view-state');
+    switchViewContext('view-dashboard');
+}
+
+// --- DASHBOARD ANALYTICS MODULE ---
+async function loadDashboardMetrics() {
+    try {
+        const summary = await apiCall('/reports/daily-summary');
+        
+        document.getElementById('dash-earnings').innerText = `TZS ${summary.total_earnings_tzs.toLocaleString()}`;
+        document.getElementById('dash-items-sold').innerText = summary.items_sold;
+        document.getElementById('dash-low-stock').innerText = summary.low_stock_count;
+        
+        // Trigger low-stock warning highlighting dynamically
+        const lowStockBox = document.getElementById('dash-low-stock-card');
+        if (lowStockBox) {
+            if (summary.low_stock_count > 0) {
+                lowStockBox.classList.add('alert-warning-border');
+            } else {
+                lowStockBox.classList.remove('alert-warning-border');
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load dashboard metrics:", e);
+    }
+}
+
+// --- POS POINT OF SALE MODULE ---
 async function initializePOSModule() {
     try {
-        // Fallback or active list fetch logic
-        catalogItemsCache = [
-            {id: 1, name: "PVC Pipe 1/2 Inch", quantity: 45, price: 12000},
-            {id: 2, name: "Fabric Roll Premium", quantity: 12, price: 85000}
-        ];
+        // Query the live relational inventory catalog endpoints directly
+        catalogItemsCache = await apiCall('/inventory');
         renderPOSCatalog(catalogItemsCache);
         renderPOSCart();
     } catch (e) {
-        console.error("Failed loading inventory catalog context.");
+        console.error("Failed to initialize active catalog profiles:", e);
     }
 }
 
 function renderPOSCatalog(items) {
-    const grid = document.getElementById('pos-grid-container');
-    if (!grid) return;
-    grid.innerHTML = items.map(item => `
-        <div class="product-tap-card" style="border:1px solid #ddd; padding:10px; margin:5px; cursor:pointer;" onclick="addProductToCart(${item.id})">
-            <h4>${item.name}</h4>
-            <span>Qty: ${item.quantity}</span><br>
-            <span style="color:green; font-weight:bold;">TZS ${item.price.toLocaleString()}</span>
-        </div>
-    `).join('');
-}
-
-function addProductToCart(itemId) {
-    const matchedProduct = catalogItemsCache.find(i => i.id === itemId);
-    const existingCartIndex = shoppingCart.findIndex(c => c.id === itemId);
+    const catalogContainer = document.getElementById('pos-catalog-grid');
+    if (!catalogContainer) return;
     
-    if (existingCartIndex > -1) {
-        shoppingCart[existingCartIndex].qty++;
-    } else {
-        shoppingCart.push({ ...matchedProduct, qty: 1 });
-    }
-    renderPOSCart();
-}
-
-function updateCartQty(index, offset) {
-    shoppingCart[index].qty += offset;
-    if (shoppingCart[index].qty <= 0) shoppingCart.splice(index, 1);
-    renderPOSCart();
-}
-
-function renderPOSCart() {
-    const wrapper = document.getElementById('pos-cart-items-wrapper');
-    if (!wrapper) return;
-    if (shoppingCart.length === 0) {
-        wrapper.innerHTML = '<div>Cart is empty.</div>';
-        document.getElementById('pos-cart-total').innerText = '0 TZS';
+    catalogContainer.innerHTML = '';
+    
+    if (items.length === 0) {
+        catalogContainer.innerHTML = `<div class="empty-notice">No warehouse inventory records matching criteria.</div>`;
         return;
     }
     
-    let total = 0;
-    wrapper.innerHTML = shoppingCart.map((item, idx) => {
-        const rowTotal = item.price * item.qty;
-        total += rowTotal;
-        return `
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                <td>${item.name} (x${item.qty})</td>
-                <td>TZS ${rowTotal.toLocaleString()}</td>
-                <button onclick="updateCartQty(${idx}, -1)">-</button>
-                <button onclick="updateCartQty(${idx}, 1)">+</button>
-            </div>
+    items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `catalog-product-card ${item.quantity <= item.reorder_point ? 'low-stock-dim' : ''}`;
+        card.innerHTML = `
+            <h4>${item.name}</h4>
+            <p class="category-tag">${item.category || 'General Store'}</p>
+            <div class="stock-badge">Stock: <strong>${item.quantity} units</strong></div>
+            <div class="price-tag">TZS ${item.price.toLocaleString()}</div>
+            <button class="add-to-cart-btn" onclick="addProductToCart(${item.id})" ${item.quantity <= 0 ? 'disabled' : ''}>
+                ${item.quantity <= 0 ? 'Out of Stock' : 'Add to Receipt'}
+            </button>
         `;
-    }).join('');
-    
-    document.getElementById('pos-cart-total').innerText = `TZS ${total.toLocaleString()}`;
+        catalogContainer.appendChild(card);
+    });
 }
 
-// Dynamic checkout handler capturing customer and company details
-document.getElementById('pos-checkout-btn')?.addEventListener('click', async () => {
-    if (shoppingCart.length === 0) return alert("Cart is empty.");
+window.addProductToCart = function(productId) {
+    const itemMatch = catalogItemsCache.find(i => i.id === productId);
+    if (!itemMatch) return;
     
-    const customer = document.getElementById('pos-customer-name')?.value || "Walk-In Client";
-    const company = document.getElementById('pos-company-name')?.value || "Individual";
-    const paymentMode = document.getElementById('pos-payment-mode')?.value || "Cash";
+    const existingCartItem = currentPOSCart.find(c => c.id === productId);
     
-    try {
-        await apiCall('/sales/checkout', {
-            method: 'POST',
-            body: JSON.stringify({
-                customer_name: customer,
-                company_name: company,
-                payment_mode: paymentMode,
-                items: shoppingCart
-            })
+    if (existingCartItem) {
+        if (existingCartItem.qty >= itemMatch.quantity) {
+            alert(`Inoperable quantity load. Stock capacity reached (${itemMatch.quantity} units available).`);
+            return;
+        }
+        existingCartItem.qty += 1;
+    } else {
+        currentPOSCart.push({
+            id: itemMatch.id,
+            name: itemMatch.name,
+            price: itemMatch.price,
+            qty: 1
         });
+    }
+    renderPOSCart();
+};
+
+window.updateCartQty = function(index, alteration) {
+    const cartItem = currentPOSCart[index];
+    const itemMatch = catalogItemsCache.find(i => i.id === cartItem.id);
+    
+    if (!cartItem || !itemMatch) return;
+    
+    cartItem.qty += alteration;
+    
+    if (cartItem.qty <= 0) {
+        currentPOSCart.splice(index, 1);
+    } else if (cartItem.qty > itemMatch.quantity) {
+        alert(`Cannot exceed stock limits. Only ${itemMatch.quantity} units available in database store.`);
+        cartItem.qty = itemMatch.quantity;
+    }
+    
+    renderPOSCart();
+};
+
+function renderPOSCart() {
+    const cartTableBody = document.getElementById('pos-cart-tbody');
+    const invoiceTotalLabel = document.getElementById('pos-invoice-total');
+    if (!cartTableBody || !invoiceTotalLabel) return;
+    
+    cartTableBody.innerHTML = '';
+    let runningTotal = 0;
+    
+    if (currentPOSCart.length === 0) {
+        cartTableBody.innerHTML = `<tr><td colspan="4" class="text-center-muted">Shopping invoice is completely empty.</td></tr>`;
+        invoiceTotalLabel.innerText = "TZS 0";
+        return;
+    }
+    
+    currentPOSCart.forEach((item, idx) => {
+        const rowTotal = item.price * item.qty;
+        runningTotal += rowTotal;
         
-        alert("Transaction recorded successfully!");
-        shoppingCart = [];
+        // REPAIRED: Clean, valid, accessible standard HTML table layout row string injections
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${item.name}</strong></td>
+            <td class="text-right">TZS ${item.price.toLocaleString()}</td>
+            <td class="text-center">
+                <div class="quantity-counter-controls">
+                    <button class="qty-control-btn" onclick="updateCartQty(${idx}, -1)">-</button>
+                    <span class="qty-count-display">${item.qty}</span>
+                    <button class="qty-control-btn" onclick="updateCartQty(${idx}, 1)">+</button>
+                </div>
+            </td>
+            <td class="text-right font-semibold">TZS ${rowTotal.toLocaleString()}</td>
+        `;
+        cartTableBody.appendChild(row);
+    });
+    
+    invoiceTotalLabel.innerText = `TZS ${runningTotal.toLocaleString()}`;
+}
+
+async function handleCartCheckoutSubmit() {
+    if (currentPOSCart.length === 0) {
+        alert("Cannot execute checkout processing over empty shopping carts.");
+        return;
+    }
+    
+    const checkoutButton = document.getElementById('pos-checkout-action');
+    const customerName = document.getElementById('pos-customer-name').value.trim();
+    const companyName = document.getElementById('pos-company-name').value.trim();
+    const paymentMode = document.getElementById('pos-payment-mode').value;
+    
+    const checkoutPayload = {
+        customer_name: customerName || "Walk-In Customer",
+        company_name: companyName || "Individual",
+        payment_mode: paymentMode,
+        items: currentPOSCart
+    };
+    
+    // Prevent double-clicking issues during connection latency
+    if (checkoutButton) checkoutButton.disabled = true;
+    
+    try {
+        const orderReceipt = await apiCall('/sales/checkout', 'POST', checkoutPayload);
+        alert(`Transaction Verified! Total Receipt Value: TZS ${orderReceipt.invoice_total.toLocaleString()} via Mode: ${orderReceipt.mode}`);
+        
+        // Reset inputs and fields on successful database deduction entries
+        currentPOSCart = [];
+        document.getElementById('pos-customer-name').value = '';
+        document.getElementById('pos-company-name').value = '';
         renderPOSCart();
-    } catch (e) {
-        alert("Error during checkout processing: " + e.message);
-    }
-});
-
-// Debtors and Creditors dynamic UI loader
-async function loadLedgerDashboards() {
-    try {
-        const debtors = await apiCall('/ledgers/debtors');
-        const creditors = await apiCall('/ledgers/creditors');
         
-        const debtContainer = document.getElementById('debtors-ledger-view');
-        if (debtContainer) {
-            debtContainer.innerHTML = debtors.map(d => `
-                <div style="border-bottom:1px solid #ccc; padding:6px 0;">
-                    <strong>${d.customer_name} (${d.company})</strong> - 
-                    <span style="color:red;">Owes TZS ${d.amount_owed.toLocaleString()}</span> [${d.status}]
-                </div>
-            `).join('');
-        }
-
-        const credContainer = document.getElementById('creditors-ledger-view');
-        if (credContainer) {
-            credContainer.innerHTML = creditors.map(c => `
-                <div style="border-bottom:1px solid #ccc; padding:6px 0;">
-                    <strong>${c.supplier_name} (Inv: ${c.invoice_no})</strong> - 
-                    <span style="color:darkorange;">We Owe TZS ${c.amount_due.toLocaleString()}</span> [${c.status}]
-                </div>
-            `).join('');
-        }
-    } catch (err) {
-        console.error("Ledger rendering matrix initialization failure:", err);
+        // Refresh catalog window to correctly display decremented balances
+        initializePOSModule();
+    } catch (e) {
+        console.error("Order workflow execution crashed:", e);
+    } finally {
+        if (checkoutButton) checkoutButton.disabled = false;
     }
 }
 
-async function executeFinancialPLSummary() {
+// --- LEDGERS MODULE (DEBTORS & CREDITORS) ---
+async function loadDebtorsLedger() {
+    const container = document.getElementById('debtors-list-tbody');
+    if (!container) return;
+    
+    container.innerHTML = `<tr><td colspan="5" class="text-center-muted">Fetching records...</td></tr>`;
+    
     try {
-        const auditData = await apiCall('/reports/full-audit');
-        document.getElementById('pl-expenses').innerText = `TZS ${auditData.expenditure_report.total_expenses.toLocaleString()}`;
-    } catch (err) {
-        console.error("Failed executing execution summaries:", err);
+        const data = await apiCall('/ledgers/debtors');
+        container.innerHTML = '';
+        
+        if (data.length === 0) {
+            container.innerHTML = `<tr><td colspan="5" class="text-center-muted">No pending customer debts (Deni) reported.</td></tr>`;
+            return;
+        }
+        
+        data.forEach(debtor => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${debtor.customer_name}</strong></td>
+                <td>${debtor.company}</td>
+                <td class="amount-alert-red font-semibold">TZS ${debtor.amount_owed.toLocaleString()}</td>
+                <td><span class="date-stamp">${debtor.date || 'N/A'}</span></td>
+                <td>
+                    <button class="action-pay-btn" onclick="executeDebtorPaymentPrompt(${debtor.id}, ${debtor.amount_owed})">Record Payment</button>
+                </td>
+            `;
+            container.appendChild(tr);
+        });
+    } catch (e) {
+        container.innerHTML = `<tr><td colspan="5" class="text-center-muted data-error">Error loading debtor profiles.</td></tr>`;
     }
 }
 
-function logout() {
-    currentToken = null;
-    localStorage.removeItem('token');
-    window.location.reload();
+window.executeDebtorPaymentPrompt = async function(debtorId, totalOwed) {
+    const inputAmount = prompt(`Enter customer collection payment processing amount (Max: TZS ${totalOwed.toLocaleString()}):`);
+    if (inputAmount === null) return;
+    
+    const cleanAmount = parseFloat(inputAmount.replace(/,/g, ''));
+    if (isNaN(cleanAmount) || cleanAmount <= 0 || cleanAmount > totalOwed) {
+        alert("Invalid input value processing parameter context. Please confirm numbers.");
+        return;
+    }
+    
+    try {
+        await apiCall(`/ledgers/debtors/pay/${debtorId}`, 'POST', { amount: cleanAmount });
+        alert("Payment logged and database updated successfully!");
+        loadDebtorsLedger();
+    } catch (e) {
+        console.error("Failed to commit ledger clearing adjustment rows:", e);
+    }
+};
+
+async function loadCreditorsLedger() {
+    const container = document.getElementById('creditors-list-tbody');
+    if (!container) return;
+    
+    container.innerHTML = `<tr><td colspan="5" class="text-center-muted">Fetching records...</td></tr>`;
+    
+    try {
+        const data = await apiCall('/ledgers/creditors');
+        container.innerHTML = '';
+        
+        if (data.length === 0) {
+            container.innerHTML = `<tr><td colspan="5" class="text-center-muted">No outstanding supplier balances (Madeni ya Wauzaji).</td></tr>`;
+            return;
+        }
+        
+        data.forEach(creditor => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${creditor.supplier_name}</strong></td>
+                <td>${creditor.invoice_no}</td>
+                <td class="amount-alert-orange font-semibold">TZS ${creditor.amount_due.toLocaleString()}</td>
+                <td><span class="date-stamp">${creditor.date || 'N/A'}</span></td>
+                <td><span class="status-badge state-${creditor.status.toLowerCase()}">${creditor.status}</span></td>
+            `;
+            container.appendChild(tr);
+        });
+    } catch (e) {
+        container.innerHTML = `<tr><td colspan="5" class="text-center-muted data-error">Error loading supplier structures.</td></tr>`;
+    }
 }
