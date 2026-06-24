@@ -3,1681 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retail OS Engine - Zimbermanne Hardware</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* Custom Palette Definitions */
-        :root {
-            --navy-core: #0F1923;
-            --navy-deep: #080D12;
-            --canvas-base: #F0EDE6;
-            --accent-gold: #D4A843;
-            --surface-card: #FFFFFF;
-            --text-primary: #1C242C;
-            --text-muted: #6F7C85;
-            
-            --hl-green: #2ECC71;
-            --hl-red: #E74C3C;
-            --hl-gold: #F39C12;
-            --border-clean: #E2DED5;
-            
-            --sidebar-width: 280px;
-            --header-height: 70px;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: var(--canvas-base);
-            color: var(--text-primary);
-            -webkit-font-smoothing: antialiased;
-            overflow: hidden;
-            height: 100vh;
-        }
-
-        .mono-font {
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        .hidden { display: none !important; }
-        .w-100 { width: 100% !important; }
-
-        /* REUSABLE STRUCTURAL BASE PANEL ASSETS */
-        .card {
-            background-color: var(--surface-card);
-            border: 1px solid var(--border-clean);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
-        }
-
-        /* SPA SCREEN SWITCHER WRAPPER */
-        .screen-wrapper {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-        }
-
-        .container-centered {
-            background-color: var(--navy-deep);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .auth-card {
-            width: 100%;
-            max-width: 420px;
-            border: none;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .brand-badge-icon {
-            font-size: 40px;
-            display: block;
-            margin-bottom: 12px;
-        }
-
-        .auth-header h2 {
-            color: var(--navy-core);
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .auth-header p {
-            color: var(--text-muted);
-            font-size: 13px;
-            margin-top: 4px;
-        }
-
-        .auth-toggle-link {
-            text-align: center;
-            margin-top: 16px;
-            font-size: 13.5px;
-            color: var(--text-muted);
-        }
-
-        .auth-toggle-link span {
-            color: var(--accent-gold);
-            cursor: pointer;
-            font-weight: 600;
-            text-decoration: underline;
-        }
-
-        /* MASTER SIDEBAR COMPONENT SYSTEM LAYOUTS */
-        .workspace-layout {
-            display: flex;
-            width: 100vw;
-            height: 100vh;
-        }
-
-        .app-sidebar {
-            width: var(--sidebar-width);
-            background-color: var(--navy-core);
-            color: #FFFFFF;
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            height: 100vh;
-        }
-
-        .sidebar-brand-strip {
-            padding: 24px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .brand-avatar {
-            width: 38px;
-            height: 38px;
-            background-color: var(--accent-gold);
-            color: var(--navy-deep);
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 700;
-            font-size: 18px;
-        }
-
-        .brand-text h3 {
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: -0.3px;
-        }
-
-        .brand-text span {
-            font-size: 11px;
-            color: var(--accent-gold);
-            font-weight: 500;
-        }
-
-        .nav-segment-label {
-            font-size: 10px;
-            font-weight: 700;
-            color: rgba(255,255,255,0.3);
-            padding: 20px 24px 6px 24px;
-            letter-spacing: 1.2px;
-        }
-
-        .sidebar-nav {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .nav-item {
-            color: rgba(255,255,255,0.65);
-            text-decoration: none;
-            font-size: 13.5px;
-            font-weight: 500;
-            padding: 10px 24px;
-            display: flex;
-            align-items: center;
-            transition: all 0.2s ease;
-        }
-
-        .nav-item:hover {
-            background-color: rgba(255,255,255,0.03);
-            color: #FFFFFF;
-        }
-
-        .nav-item.active {
-            background-color: var(--canvas-base);
-            color: var(--navy-core);
-            font-weight: 600;
-            border-radius: 8px 0 0 8px;
-            margin-left: 16px;
-        }
-
-        .sidebar-user-anchor {
-            margin-top: auto;
-            padding: 20px 24px;
-            border-top: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .user-pill {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .user-initials {
-            width: 36px;
-            height: 36px;
-            background-color: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 600;
-            font-size: 13px;
-            color: var(--accent-gold);
-        }
-
-        .user-details strong { display: block; font-size: 13.5px; }
-        .user-details span { font-size: 11px; color: var(--accent-gold); text-transform: uppercase; }
-        .btn-logout-link { background: none; border: none; color: var(--hl-red); font-size: 12px; font-weight: 600; cursor: pointer; }
-        /* AI Agent styles */
-        .agent-msg { display:flex; gap:10px; }
-        .agent-msg--bot .agent-msg-bubble { background:var(--canvas-base); border:1px solid var(--border-clean); border-radius:0 12px 12px 12px; padding:12px 16px; font-size:13.5px; line-height:1.6; max-width:90%; }
-        .agent-msg--user { justify-content:flex-end; }
-        .agent-msg--user .agent-msg-bubble { background:var(--navy-core); color:white; border-radius:12px 12px 0 12px; padding:10px 14px; font-size:13.5px; max-width:80%; }
-        .agent-msg-typing .agent-msg-bubble { font-size:20px; letter-spacing:4px; color:var(--text-muted); }
-        .btn-quick-query { padding:8px 12px; background:var(--canvas-base); border:1px solid var(--border-clean); border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; text-align:left; transition:all 0.15s; }
-        .btn-quick-query:hover { background:var(--navy-core); color:white; border-color:var(--navy-core); }
-        .compare-card { background:var(--canvas-base); border-radius:8px; padding:12px; }
-        .compare-card h5 { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; letter-spacing:0.8px; }
-        .compare-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-bottom:4px; }
-        .change-badge { font-size:11px; font-weight:700; padding:2px 6px; border-radius:4px; }
-        .change-up { background:#d4edda; color:#155724; }
-        .change-down { background:#f8d7da; color:#721c24; }
-        .change-flat { background:#e2e3e5; color:#383d41; }
-        /* PDF export line items */
-        .pdf-item-row { display:flex; gap:8px; align-items:center; }
-        .pdf-item-row input { padding:7px 10px; border:1px solid var(--border-clean); border-radius:6px; font-size:13px; }
-        .pdf-item-row .desc-inp { flex:3; }
-        .pdf-item-row .qty-inp { flex:0.8; }
-        .pdf-item-row .price-inp { flex:1.2; }
-        .pdf-item-row .remove-btn { background:none; border:none; color:var(--hl-red); cursor:pointer; font-size:16px; padding:0 4px; }
-
-        /* MAIN CONTENT APPLICATION VIEWPORTS */
-        .app-viewport {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .viewport-header {
-            height: var(--header-height);
-            background-color: var(--surface-card);
-            border-bottom: 1px solid var(--border-clean);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 32px;
-            flex-shrink: 0;
-        }
-
-        .viewport-header h1 { font-size: 20px; font-weight: 700; color: var(--navy-core); }
-        .viewport-scrollable-content { flex-grow: 1; padding: 32px; overflow-y: auto; }
-
-        /* TODAY TICKERS MATRIX COMPONENTS */
-        .kpi-matrix-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-
-        .kpi-box {
-            background-color: var(--surface-card);
-            border: 1px solid var(--border-clean);
-            border-radius: 12px;
-            padding: 20px;
-        }
-
-        .kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 500; display: block; margin-bottom: 6px; }
-        .kpi-box h2, .kpi-box h3 { font-size: 22px; color: var(--navy-core); }
-
-        .boundary-alert { border-left: 4px solid var(--hl-red); }
-        .text-highlight-green { color: var(--hl-green) !important; }
-        .text-highlight-red { color: var(--hl-red) !important; }
-        .text-highlight-gold { color: var(--accent-gold) !important; }
-
-        /* DATA PLACEMENT COMPONENT SPLITS */
-        .dashboard-split-grid {
-            display: grid;
-            grid-template-columns: 1.3fr 1fr;
-            gap: 24px;
-        }
-
-        .card-title-header { margin-bottom: 20px; border-bottom: 1px solid var(--border-clean); padding-bottom: 12px; }
-        .card-title-header h3 { font-size: 15px; font-weight: 600; color: var(--navy-core); }
-
-        /* DATA VISUALIZATION HISTOGRAMS */
-        .bar-chart-canvas {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            height: 220px;
-            padding-top: 30px;
-            border-bottom: 1px solid var(--border-clean);
-        }
-
-        .chart-bar {
-            width: 38px;
-            background-color: var(--navy-core);
-            border-radius: 4px 4px 0 0;
-            position: relative;
-        }
-
-        .chart-bar::after {
-            content: attr(data-day);
-            position: absolute;
-            bottom: -24px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        .v-label { position: absolute; top: -20px; left:50%; transform:translateX(-50%); font-size: 11px; font-weight: 600; color: var(--text-primary); }
-
-        /* INTERFACIAL POINT OF SALE GRID ENVIRONMENT */
-        .pos-split-layout { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; height: calc(100vh - 170px); }
-        .catalog-panel, .receipt-checkout-panel { display: flex; flex-direction: column; height: 100%; padding: 20px; }
-        .search-field-wrapper input { width: 100%; padding: 12px; border: 1px solid var(--border-clean); border-radius: 8px; font-size: 14px; }
-        .catalog-grid-array { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; overflow-y: auto; margin-top: 16px; }
-
-        .product-tap-card {
-            background-color: var(--canvas-base);
-            border: 1px solid var(--border-clean);
-            border-radius: 8px;
-            padding: 14px;
-            cursor: pointer;
-            text-align: center;
-        }
-
-        .product-tap-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-        .product-tap-card span { font-size: 11.5px; color: var(--text-muted); display: block; }
-
-        .checkout-items-list { flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-clean); border-radius: 8px; margin: 16px 0; padding: 12px; }
-        .cart-item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-clean); }
-        .cart-qty-controls button { width: 22px; height: 22px; border: none; background: #DDD; cursor: pointer; border-radius: 4px; font-weight: bold; }
-
-        .total-aggregate-strip { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-
-        /* SYSTEM RESPONSIVE DATA ARRAYS */
-        .responsive-table-holder { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th, td { padding: 12px 14px; font-size: 13.5px; border-bottom: 1px solid var(--border-clean); }
-        th { background-color: rgba(0,0,0,0.015); font-weight: 600; color: var(--navy-core); }
-
-        /* WEB FORM SCHEMATICS COMPONENT */
-        .form-group { margin-bottom: 14px; }
-        .form-group label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 6px; color: var(--navy-core); text-transform: uppercase; letter-spacing: 0.5px;}
-        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid var(--border-clean); border-radius: 6px; font-size: 13.5px; }
-
-        .error-banner { background-color: rgba(231, 76, 60, 0.1); color: var(--hl-red); padding: 10px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; font-weight: 500; text-align: center;}
-        .success-banner { background-color: rgba(46, 204, 113, 0.1); color: var(--hl-green); padding: 10px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; font-weight: 500; text-align: center;}
-
-        /* ACTION SECTOR BUTTON PLATFORMS */
-        .btn { padding: 11px 20px; border-radius: 6px; border: none; font-weight: 600; font-size: 13.5px; cursor: pointer; display: inline-block; text-align: center;}
-        .btn-primary { background-color: var(--navy-core); color: #FFFFFF; }
-        .btn-success { background-color: var(--hl-green); color: #FFFFFF; }
-        .btn-secondary { background-color: var(--border-clean); color: var(--text-primary); }
-
-        /* SYSTEM FLOATING MODAL SCHEMES */
-        .modal-layer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(8,13,18,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000; }
-        .modal-surface { width: 90%; max-width: 500px; position: relative; }
-        .modal-dismiss-trigger { position: absolute; top: 16px; right: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); }
-    </style>
+    <title>Zimbermanne Retail OS</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="app">
-        <div id="auth-screen" class="screen-wrapper container-centered">
-            <div id="login-card-view" class="card auth-card">
-                <div class="auth-header">
-                    <span class="brand-badge-icon">🏪</span>
-                    <h2>Retail OS Engine</h2>
-                    <p>Access your store dashboard</p>
-                </div>
-                <div id="login-err-banner" class="error-banner hidden"></div>
-                <form id="login-form">
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="login-user-input" required placeholder="Enter username...">
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="login-pass-input" required placeholder="••••••••">
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Sign In to Engine</button>
-                </form>
-                <div class="auth-toggle-link">
-                    Need a new store? <span onclick="toggleAuthForms(true)">Create Profile here</span>
+
+    <div class="workspace-layout">
+        
+        <!-- Persistent Application Navigation Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo">Z</div>
+                <div class="brand-text">
+                    <h1>Zimbermanne Ltd</h1>
+                    <span>Retail Engine v1.0</span>
                 </div>
             </div>
 
-            <div id="register-card-view" class="card auth-card hidden">
-                <div class="auth-header">
-                    <span class="brand-badge-icon">🛠️</span>
-                    <h2>Establish Profile</h2>
-                    <p>Deploy a custom digital storefront entry</p>
-                </div>
-                <div id="register-err-banner" class="error-banner hidden"></div>
-                <div id="register-success-banner" class="success-banner hidden"></div>
-                <form id="register-form">
-                    <div class="form-group">
-                        <label>Store Profile Name</label>
-                        <input type="text" id="reg-profile-name" required placeholder="e.g. Zimbermanne Hardware">
+            <nav class="sidebar-menu">
+                <a href="#dashboard" class="menu-item">
+                    <span class="menu-icon">📊</span>
+                    <span class="menu-label">Dashboard Overview</span>
+                </a>
+                <a href="#pos" class="menu-item active">
+                    <span class="menu-icon">🛒</span>
+                    <span class="menu-label">Point of Sale (POS)</span>
+                </a>
+                <a href="#inventory" class="menu-item">
+                    <span class="menu-icon">📦</span>
+                    <span class="menu-label">Inventory Ledger</span>
+                </a>
+                <a href="#tenants" class="menu-item">
+                    <span class="menu-icon">🏢</span>
+                    <span class="menu-label">Property Units</span>
+                </a>
+                <a href="#settings" class="menu-item">
+                    <span class="menu-icon">⚙️</span>
+                    <span class="menu-label">System Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar">MZ</div>
+                    <div class="user-meta">
+                        <span class="user-name">Mr. Zimbermann</span>
+                        <span class="user-role">Administrator</span>
                     </div>
-                    <div class="form-group">
-                        <label>Admin Access Username</label>
-                        <input type="text" id="reg-admin-user" required placeholder="Choose username...">
-                    </div>
-                    <div class="form-group">
-                        <label>Secure Master Password</label>
-                        <input type="password" id="reg-admin-pass" required placeholder="••••••••">
-                    </div>
-                    <button type="submit" class="btn btn-success w-100">Instantiate Profile</button>
-                </form>
-                <div class="auth-toggle-link">
-                    Already registered? <span onclick="toggleAuthForms(false)">Return to Log In</span>
                 </div>
             </div>
-        </div>
+        </aside>
 
-        <div id="dashboard-screen" class="screen-wrapper workspace-layout hidden">
-            <aside class="app-sidebar">
-                <div class="sidebar-brand-strip">
-                    <div class="brand-avatar">Z</div>
-                    <div class="brand-text">
-                        <h3 id="sidebar-profile-title">Zimbermanne</h3>
-                        <span id="active-profile-tag">Hardware Store</span>
+        <!-- Main Viewport Window Container -->
+        <main class="viewport-window">
+            
+            <!-- Global Top Action Header Bar -->
+            <header class="viewport-header">
+                <div class="header-context">
+                    <h2>Point of Sale Workspace</h2>
+                    <p class="text-muted">Live Transaction & Operational Console</p>
+                </div>
+                <div class="header-actions">
+                    <div class="status-indicator online">
+                        <span class="indicator-dot"></span>
+                        <span class="indicator-text">System Online</span>
                     </div>
+                    <button class="btn btn-secondary">Sync Ledger</button>
+                </div>
+            </header>
+
+            <!-- Active Viewport Workspace Dynamic Canvas -->
+            <div class="viewport-canvas">
+                
+                <div class="pos-split-layout">
+                    
+                    <!-- Left Column: Catalog Discovery & Items Array -->
+                    <section class="card catalog-panel">
+                        <div class="panel-header">
+                            <div class="search-box-wrapper">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" class="search-input" placeholder="Search catalog by component name, code, or SKU...">
+                            </div>
+                        </div>
+
+                        <!-- Grid Array Container -->
+                        <div class="catalog-grid-array">
+                            <!-- Product Card 1 -->
+                            <div class="product-item-card">
+                                <div class="product-badge">Engine Parts</div>
+                                <h3 class="product-title">1UZ-FE Performance Spark Plug Kit</h3>
+                                <p class="product-sku">SKU: ENG-1UZ-SPK</p>
+                                <div class="product-footer">
+                                    <span class="product-price">185,000 TZS</span>
+                                    <button class="btn-icon-add">+</button>
+                                </div>
+                            </div>
+                            <!-- Product Card 2 -->
+                            <div class="product-item-card">
+                                <div class="product-badge">Heavy Duty</div>
+                                <h3 class="product-title">Toyota Hilux Front Brake Pad Set</h3>
+                                <p class="product-sku">SKU: BRK-HLX-004</p>
+                                <div class="product-footer">
+                                    <span class="product-price">320,000 TZS</span>
+                                    <button class="btn-icon-add">+</button>
+                                </div>
+                            </div>
+                            <!-- Product Card 3 -->
+                            <div class="product-item-card out-of-stock">
+                                <div class="product-badge">Turbos</div>
+                                <h3 class="product-title">1KD-FTV Variable Nozzle Turbocharger</h3>
+                                <p class="product-sku">SKU: TRB-1KD-VNT</p>
+                                <div class="product-footer">
+                                    <span class="product-price">1,850,000 TZS</span>
+                                    <span class="stock-status-label">Out of Stock</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Right Column: Active Checkout & Settlement Panel -->
+                    <section class="card checkout-panel">
+                        <div class="checkout-header">
+                            <h3>Active Transaction Cart</h3>
+                            <span class="items-count-badge">2 Items Selected</span>
+                        </div>
+
+                        <!-- Active Cart Line Items Container -->
+                        <div class="cart-items-list">
+                            <!-- Cart Item row 1 -->
+                            <div class="cart-row-item">
+                                <div class="cart-item-info">
+                                    <h4>1UZ-FE Performance Spark Plug Kit</h4>
+                                    <p class="text-muted">185,000 TZS x 1</p>
+                                </div>
+                                <div class="cart-item-actions">
+                                    <span class="cart-item-subtotal">185,000 TZS</span>
+                                    <button class="btn-remove">&times;</button>
+                                </div>
+                            </div>
+                            <!-- Cart Item row 2 -->
+                            <div class="cart-row-item">
+                                <div class="cart-item-info">
+                                    <h4>Toyota Hilux Front Brake Pad Set</h4>
+                                    <p class="text-muted">320,000 TZS x 2</p>
+                                </div>
+                                <div class="cart-item-actions">
+                                    <span class="cart-item-subtotal">640,000 TZS</span>
+                                    <button class="btn-remove">&times;</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settlement Metadata Form Container -->
+                        <div class="settlement-meta-form">
+                            <div class="form-group">
+                                <label class="form-label">Customer Reference / Phone</label>
+                                <input type="text" class="form-control" placeholder="Optional: Enter name or phone number">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Settlement Mode</label>
+                                <div class="settlement-modes-grid">
+                                    <button class="mode-selector-btn active">💵 Cash</button>
+                                    <button class="mode-selector-btn">📱 M-Pesa</button>
+                                    <button class="mode-selector-btn">💳 Bank / CRDB</button>
+                                    <button class="mode-selector-btn">🛑 Deni</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Checkout Summary Breakdown Footer -->
+                        <footer class="checkout-footer-meta">
+                            <div class="summary-row">
+                                <span>Subtotal</span>
+                                <span>825,000 TZS</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>VAT Tax (18%)</span>
+                                <span>148,500 TZS</span>
+                            </div>
+                            <hr class="summary-divider">
+                            <div class="summary-row total-row">
+                                <span>Total Payable</span>
+                                <span class="text-accent-gold">973,500 TZS</span>
+                            </div>
+                            <button class="btn btn-primary btn-block finish-transaction-btn">Commit & Process Transaction</button>
+                        </footer>
+                    </section>
+
                 </div>
 
-                <div class="nav-segment-label">CORE VIEWS</div>
-                <nav class="sidebar-nav">
-                    <a href="#" class="nav-item active" data-section="dashboard">📊 Dashboard Summary</a>
-                    <a href="#" class="nav-item" data-section="pos">🛍️ Point of Sale (POS)</a>
-                </nav>
-
-                <div class="nav-segment-label">DATA LOGS</div>
-                <nav class="sidebar-nav">
-                    <a href="#" class="nav-item" data-section="inventory">📦 Inventory Items</a>
-                    <a href="#" class="nav-item" data-section="sales">🧾 Sales Transactions</a>
-                    <a href="#" class="nav-item" data-section="purchases">🚛 Stock Purchases</a>
-                    <a href="#" class="nav-item" data-section="expenses">📉 Expense Records</a>
-                </nav>
-
-                <div class="nav-segment-label">FINANCIALS</div>
-                <nav class="sidebar-nav">
-                    <a href="#" class="nav-item" data-section="debtors">👥 Debtors (Deni)</a>
-                    <a href="#" class="nav-item" data-section="reports">📈 Profit & Loss (P&L)</a>
-                </nav>
-
-                <div class="nav-segment-label">TOOLS</div>
-                <nav class="sidebar-nav">
-                    <a href="#" class="nav-item" data-section="agent">🤖 Zimbi AI Agent</a>
-                    <a href="#" class="nav-item" data-section="import">📥 Import Stock</a>
-                    <a href="#" class="nav-item" data-section="export">🧾 Export Invoice/Quote</a>
-                </nav>
-
-                <div class="sidebar-user-anchor">
-                    <div class="user-pill">
-                        <div class="user-initials">AD</div>
-                        <div class="user-details">
-                            <strong id="user-display-name">Admin User</strong>
-                            <span>root</span>
-                        </div>
-                    </div>
-                    <button onclick="terminateSession()" class="btn-logout-link">🚪 Disconnect Session</button>
-                </div>
-            </aside>
-
-            <main class="app-viewport">
-                <header class="viewport-header">
-                    <h1 id="viewport-title">Dashboard Summary</h1>
-                    <div class="header-right-meta">
-                        <span id="live-ticker-clock" class="mono-font">17:00:30</span>
-                    </div>
-                </header>
-
-                <div class="viewport-scrollable-content">
-                    <section id="dashboard-section" class="ui-section">
-                        <div class="kpi-matrix-row">
-                            <div class="kpi-box text-highlight-green">
-                                <span class="kpi-label">Today's Total Revenue</span>
-                                <h2 id="kpi-today-sales" class="mono-font">0 TZS</h2>
-                            </div>
-                            <div class="kpi-box">
-                                <span class="kpi-label">Transactions Volume</span>
-                                <h2 id="kpi-tx-count" class="mono-font">0 tx</h2>
-                            </div>
-                            <div class="kpi-box">
-                                <span class="kpi-label">Low Stock Alarms</span>
-                                <h2 id="kpi-low-stock" class="mono-font text-highlight-red">0 items</h2>
-                            </div>
-                            <div class="kpi-box text-highlight-gold">
-                                <span class="kpi-label">Debtors (Deni)</span>
-                                <h2 id="kpi-debtors" class="mono-font">0 TZS</h2>
-                            </div>
-                            <div class="kpi-box">
-                                <span class="kpi-label">Net Monthly Profit</span>
-                                <h2 id="kpi-net-profit" class="mono-font">0 TZS</h2>
-                            </div>
-                        </div>
-
-                        <div class="dashboard-split-grid">
-                            <div class="card panel-card">
-                                <div class="card-title-header">
-                                    <h3>Weekly Performance Trend</h3>
-                                </div>
-                                <div class="bar-chart-canvas">
-                                    <div class="chart-bar" style="height: 75%;" data-day="Mon"><span class="v-label">450k</span></div>
-                                    <div class="chart-bar" style="height: 40%;" data-day="Tue"><span class="v-label">210k</span></div>
-                                    <div class="chart-bar" style="height: 15%;" data-day="Wed"><span class="v-label">85k</span></div>
-                                    <div class="chart-bar" style="height: 60%;" data-day="Thu"><span class="v-label">320k</span></div>
-                                    <div class="chart-bar" style="height: 90%;" data-day="Fri"><span class="v-label">580k</span></div>
-                                    <div class="chart-bar" style="height: 20%;" data-day="Sat"><span class="v-label">110k</span></div>
-                                    <div class="chart-bar" style="height: 0%;" data-day="Sun"><span class="v-label">0</span></div>
-                                </div>
-                            </div>
-                            <div class="card panel-card">
-                                <div class="card-title-header">
-                                    <h3>Critical Stock Replenishment Warnings</h3>
-                                </div>
-                                <div class="responsive-table-holder">
-                                    <table>
-                                        <thead>
-                                            <tr><th>Product Name</th><th>Stock</th><th>Status</th></tr>
-                                        </thead>
-                                        <tbody id="dashboard-low-stock-table">
-                                            </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section id="pos-section" class="ui-section hidden">
-                        <div class="pos-split-layout">
-                            <div class="card catalog-panel">
-                                <div class="search-field-wrapper">
-                                    <input type="text" id="pos-search-input" oninput="filterPOSCatalog()" placeholder="🔍 Search components by keyword...">
-                                </div>
-                                <div class="catalog-grid-array" id="pos-grid-container"></div>
-                            </div>
-                            <div class="card receipt-checkout-panel">
-                                <h3>Active Transaction Cart</h3>
-                                <div class="checkout-items-list" id="pos-cart-items-wrapper"></div>
-                                <div class="checkout-footer-meta">
-                                    <div class="total-aggregate-strip">
-                                        <span>Total Amount Due:</span>
-                                        <h2 id="pos-cart-total" class="mono-font text-highlight-green">0 TZS</h2>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Customer Name Reference</label>
-                                        <input type="text" id="pos-customer-name" placeholder="Required for Credit (Deni)">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Customer Address <span style="color:var(--text-muted); font-weight:normal;">(optional)</span></label>
-                                        <input type="text" id="pos-customer-address" placeholder="e.g. Sinza, Dar es Salaam">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>TIN No. <span style="color:var(--text-muted); font-weight:normal;">(optional)</span></label>
-                                        <input type="text" id="pos-customer-tin" placeholder="e.g. 123-456-789">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Settlement Mode Type</label>
-                                        <select id="pos-payment-mode">
-                                            <option value="Cash">Cash (Taslimu)</option>
-                                            <option value="M-Pesa">Vodacom M-Pesa</option>
-                                            <option value="AirtelMoney">Airtel Money</option>
-                                            <option value="Deni">Credit Accounts (Deni)</option>
-                                        </select>
-                                    </div>
-                                    <button onclick="commitCheckout()" class="btn btn-success w-100">Commit and Post Sale</button>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section id="inventory-section" class="ui-section hidden">
-                        <div style="margin-bottom:20px;">
-                            <button onclick="openItemModal()" class="btn btn-primary">+ Add New Item Record</button>
-                        </div>
-                        <div class="card responsive-table-holder">
-                            <table>
-                                <thead>
-                                    <tr><th>Item ID</th><th>Description</th><th>Stock Level</th><th>Unit Price</th><th>Cost</th><th>Actions</th></tr>
-                                </thead>
-                                <tbody id="inventory-table-body"></tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <section id="sales-section" class="ui-section hidden">
-                        <div class="card responsive-table-holder">
-                            <table>
-                                <thead><tr><th>Timestamp</th><th>Reference Customer</th><th>Item</th><th>Qty</th><th>Subtotal</th><th>Method</th></tr></thead>
-                                <tbody id="sales-table-body"></tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <section id="purchases-section" class="ui-section hidden">
-                        <div style="margin-bottom:20px;"><button onclick="openPurchaseModal()" class="btn btn-primary">+ Log Stock Inward Purchase</button></div>
-                        <div class="card responsive-table-holder">
-                            <table>
-                                <thead><tr><th>Date</th><th>Item</th><th>Inward Qty</th><th>Supplier</th></tr></thead>
-                                <tbody id="purchases-table-body"></tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <section id="expenses-section" class="ui-section hidden">
-                        <div style="margin-bottom:20px;"><button onclick="openExpenseModal()" class="btn btn-primary">+ Record Operating Expense</button></div>
-                        <div class="card responsive-table-holder">
-                            <table>
-                                <thead><tr><th>Date</th><th>Category</th><th>Details</th><th>Amount</th></tr></thead>
-                                <tbody id="expenses-table-body"></tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <section id="debtors-section" class="ui-section hidden">
-                        <div class="card responsive-table-holder">
-                            <table>
-                                <thead><tr><th>Debtor Name Account</th><th>Total Aggregated Balances</th><th>Settle Balance</th></tr></thead>
-                                <tbody id="debtors-table-body"></tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <section id="reports-section" class="ui-section hidden">
-                        <div class="kpi-matrix-row">
-                            <div class="kpi-box"><span>Gross Revenue Yield</span><h3 id="pl-revenue" class="mono-font text-highlight-green">0 TZS</h3></div>
-                            <div class="kpi-box"><span>COGS Expenses</span><h3 id="pl-cogs" class="mono-font">0 TZS</h3></div>
-                            <div class="kpi-box"><span>Operating Expenses</span><h3 id="pl-expenses" class="mono-font text-highlight-red">0 TZS</h3></div>
-                            <div class="kpi-box text-highlight-gold"><span>Net Yield Margin</span><h2 id="pl-net" class="mono-font">0 TZS</h2></div>
-                        </div>
-                    </section>
-
-                    <!-- ===== ZIMBI AI AGENT ===== -->
-                    <section id="agent-section" class="ui-section hidden">
-                        <div style="display:grid; grid-template-columns:1fr 320px; gap:20px; height:calc(100vh - 130px);">
-                            <!-- Chat panel -->
-                            <div class="card" style="display:flex; flex-direction:column; padding:0; overflow:hidden;">
-                                <div style="padding:20px 24px; border-bottom:1px solid var(--border-clean); display:flex; align-items:center; gap:12px;">
-                                    <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--navy-core),var(--accent-gold));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
-                                    <div>
-                                        <h3 style="font-size:15px; font-weight:700;">Zimbi — Business Intelligence Agent</h3>
-                                        <span style="font-size:11px; color:var(--text-muted);">Powered by Claude AI · Analyses your live business data</span>
-                                    </div>
-                                    <div style="margin-left:auto;">
-                                        <select id="agent-period-select" style="padding:6px 10px; border:1px solid var(--border-clean); border-radius:6px; font-size:12px; background:white;">
-                                            <option value="day">Today</option>
-                                            <option value="month" selected>This Month</option>
-                                            <option value="year">This Year</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div id="agent-chat-messages" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px;">
-                                    <div class="agent-msg agent-msg--bot">
-                                        <div class="agent-msg-bubble">👋 Habari! I'm <strong>Zimbi</strong>, your AI business analyst. Ask me anything about your sales, profit, stock levels, or trends — I have access to your live data. Try:<br><br>
-                                        • "Compare this month vs last month"<br>
-                                        • "Which products are selling best?"<br>
-                                        • "What's our profit margin this year?"<br>
-                                        • "Alert me on any concerning trends"</div>
-                                    </div>
-                                </div>
-                                <div style="padding:16px 20px; border-top:1px solid var(--border-clean); display:flex; gap:10px;">
-                                    <input type="text" id="agent-input" placeholder="Ask Zimbi anything about your business..." style="flex:1; padding:10px 14px; border:1.5px solid var(--border-clean); border-radius:8px; font-size:14px; outline:none;" onkeydown="if(event.key==='Enter')sendAgentMessage()">
-                                    <button onclick="sendAgentMessage()" id="agent-send-btn" style="padding:10px 20px; background:var(--navy-core); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; white-space:nowrap;">Send ↑</button>
-                                </div>
-                            </div>
-
-                            <!-- Comparison panel -->
-                            <div style="display:flex; flex-direction:column; gap:16px; overflow-y:auto;">
-                                <div class="card" style="padding:20px;">
-                                    <h4 style="font-size:13px; font-weight:700; margin-bottom:14px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;">📊 Period Comparison</h4>
-                                    <div id="compare-loading" style="color:var(--text-muted); font-size:13px;">Loading...</div>
-                                    <div id="compare-cards" style="display:flex; flex-direction:column; gap:12px;"></div>
-                                </div>
-                                <div class="card" style="padding:20px;">
-                                    <h4 style="font-size:13px; font-weight:700; margin-bottom:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;">⚡ Quick Queries</h4>
-                                    <div style="display:flex; flex-direction:column; gap:8px;">
-                                        <button onclick="quickQuery('Give me a full financial summary and highlight any issues')" class="btn-quick-query">Full Financial Summary</button>
-                                        <button onclick="quickQuery('Compare this month vs last month in detail')" class="btn-quick-query">Month vs Last Month</button>
-                                        <button onclick="quickQuery('Compare this year vs last year performance')" class="btn-quick-query">Year vs Last Year</button>
-                                        <button onclick="quickQuery('Which products are my top performers and which are slow movers?')" class="btn-quick-query">Top & Slow Products</button>
-                                        <button onclick="quickQuery('What are the low stock items I need to reorder urgently?')" class="btn-quick-query">Low Stock Alerts</button>
-                                        <button onclick="quickQuery('Analyse my daily sales trend and identify any patterns')" class="btn-quick-query">Daily Sales Trend</button>
-                                        <button onclick="quickQuery('What is my gross profit margin and how can I improve it?')" class="btn-quick-query">Profit Margin Analysis</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- ===== STOCK IMPORT ===== -->
-                    <section id="import-section" class="ui-section hidden">
-                        <div style="max-width:700px; margin:0 auto; display:flex; flex-direction:column; gap:20px;">
-                            <div class="card">
-                                <h3 style="margin-bottom:6px;">📥 Import Stock from CSV / Excel</h3>
-                                <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Upload a CSV or Excel file to bulk-add or update inventory items. Download the template to see the required format.</p>
-
-                                <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-                                    <button onclick="downloadImportTemplate()" class="btn" style="background:var(--navy-core); color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-size:13px;">⬇ Download Template CSV</button>
-                                </div>
-
-                                <div id="import-drop-zone" style="border:2px dashed var(--border-clean); border-radius:12px; padding:40px; text-align:center; cursor:pointer; background:var(--canvas-base); transition:all 0.2s;" onclick="document.getElementById('import-file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent-gold)'" ondrop="handleImportDrop(event)">
-                                    <div style="font-size:40px; margin-bottom:10px;">📂</div>
-                                    <p style="font-weight:600; color:var(--text-primary);">Click to select file or drag & drop here</p>
-                                    <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Supports .csv, .xlsx, .xls files</p>
-                                    <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImportFileSelect(this.files[0])">
-                                </div>
-
-                                <div style="margin-top:16px; display:flex; align-items:center; gap:10px;">
-                                    <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
-                                        <input type="checkbox" id="import-update-existing" style="width:16px; height:16px;">
-                                        <span>Update existing items (add to quantity, update price)</span>
-                                    </label>
-                                </div>
-
-                                <div id="import-selected-file" style="display:none; margin-top:12px; padding:10px 14px; background:#f0f9f0; border-radius:8px; font-size:13px; display:flex; align-items:center; gap:10px;">
-                                    <span>📄</span>
-                                    <span id="import-selected-name"></span>
-                                    <button onclick="submitImport()" id="import-submit-btn" style="margin-left:auto; padding:8px 20px; background:#2ECC71; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Import Now</button>
-                                </div>
-                            </div>
-
-                            <div id="import-result" class="card" style="display:none;">
-                                <h4 style="margin-bottom:12px;">Import Result</h4>
-                                <div id="import-result-body"></div>
-                            </div>
-
-                            <div class="card" style="background:var(--navy-core); color:white;">
-                                <h4 style="margin-bottom:10px; color:var(--accent-gold);">📋 Required CSV Format</h4>
-                                <code style="font-size:12px; display:block; line-height:1.8; color:#ccc;">
-                                    name, quantity, price, category (optional), reorder_point (optional)<br>
-                                    PVC Pipe 1/2 Inch, 100, 2500, Plumbing, 20<br>
-                                    Cement 50kg Bag, 50, 35000, Building Materials, 10<br>
-                                    Steel Rod 12mm, 200, 8500, Steel, 15
-                                </code>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- ===== INVOICE / QUOTE EXPORT ===== -->
-                    <section id="export-section" class="ui-section hidden">
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:1100px; margin:0 auto;">
-                            <div class="card">
-                                <h3 style="margin-bottom:16px;">🧾 Generate Invoice / Quote PDF</h3>
-
-                                <div style="display:flex; gap:8px; margin-bottom:16px;">
-                                    <button onclick="setDocType('invoice')" id="doc-type-invoice" class="btn btn-success" style="flex:1;">📄 Invoice</button>
-                                    <button onclick="setDocType('quote')" id="doc-type-quote" class="btn" style="flex:1; background:var(--navy-core); color:white;">📋 Quote</button>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Invoice / Quote Number</label>
-                                    <input type="text" id="pdf-inv-number" placeholder="e.g. INV-2026-001" value="INV-2026-001">
-                                </div>
-                                <div class="form-group">
-                                    <label>Date</label>
-                                    <input type="date" id="pdf-date">
-                                </div>
-                                <div class="form-group">
-                                    <label>Customer / Company Name *</label>
-                                    <input type="text" id="pdf-customer" placeholder="e.g. Singitha Holdings Ltd">
-                                </div>
-                                <div class="form-group">
-                                    <label>Customer Address</label>
-                                    <input type="text" id="pdf-address" placeholder="e.g. Sinza, Dar es Salaam">
-                                </div>
-                                <div class="form-group">
-                                    <label>TIN Number (optional)</label>
-                                    <input type="text" id="pdf-tin" placeholder="e.g. 123-456-789">
-                                </div>
-                                <div class="form-group">
-                                    <label>Notes (optional)</label>
-                                    <textarea id="pdf-notes" style="width:100%; padding:8px; border:1px solid var(--border-clean); border-radius:6px; font-size:13px; resize:vertical;" rows="2" placeholder="Payment due within 30 days..."></textarea>
-                                </div>
-
-                                <h4 style="margin:16px 0 10px; font-size:13px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Line Items</h4>
-                                <div id="pdf-items-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-                                <button onclick="addPdfItem()" style="margin-top:10px; padding:8px 14px; background:transparent; border:1.5px dashed var(--border-clean); border-radius:6px; cursor:pointer; font-size:13px; color:var(--text-muted); width:100%;">+ Add Line Item</button>
-
-                                <div style="margin-top:20px;">
-                                    <button onclick="generatePdf()" style="width:100%; padding:12px; background:var(--navy-core); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700; font-size:14px;" id="pdf-generate-btn">⬇ Generate & Download PDF</button>
-                                </div>
-                            </div>
-
-                            <!-- Preview totals -->
-                            <div>
-                                <div class="card" style="margin-bottom:16px;">
-                                    <h4 style="margin-bottom:14px; color:var(--text-muted); font-size:12px; text-transform:uppercase; letter-spacing:0.8px;">Live Preview</h4>
-                                    <div style="border:1px solid var(--border-clean); border-radius:8px; padding:16px; min-height:200px; background:white;">
-                                        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
-                                            <div>
-                                                <div style="font-size:18px; font-weight:700; color:var(--navy-core);">Zimbermanne</div>
-                                                <div style="font-size:11px; color:var(--accent-gold); font-weight:600;">Hardware & Building Materials</div>
-                                            </div>
-                                            <div id="preview-doc-type" style="font-size:22px; font-weight:700; color:#2ECC71;">INVOICE</div>
-                                        </div>
-                                        <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">To: <span id="preview-customer">—</span></div>
-                                        <table style="width:100%; font-size:11px; border-collapse:collapse;">
-                                            <thead><tr style="background:var(--navy-core); color:white;"><th style="padding:6px; text-align:left;">Item</th><th style="padding:6px; text-align:right;">Qty</th><th style="padding:6px; text-align:right;">Total</th></tr></thead>
-                                            <tbody id="preview-items"></tbody>
-                                        </table>
-                                        <div style="margin-top:10px; text-align:right; font-size:12px;">
-                                            <div>Subtotal: <b id="preview-subtotal">0 TZS</b></div>
-                                            <div style="color:var(--text-muted);">VAT 18%: <span id="preview-vat">0 TZS</span></div>
-                                            <div style="font-size:14px; font-weight:700; color:#2ECC71; margin-top:4px;">TOTAL: <span id="preview-total">0 TZS</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="card" style="background:#f8f9ff;">
-                                    <h4 style="margin-bottom:10px; font-size:12px; color:var(--text-muted); text-transform:uppercase;">Recent Exports</h4>
-                                    <div id="recent-exports-list" style="font-size:13px; color:var(--text-muted);">No exports yet this session.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-            </main>
-        </div>
-
-        <div id="modal-layer" class="modal-layer hidden">
-            <div class="card modal-surface">
-                <span class="modal-dismiss-trigger" onclick="closeFormModal()">&times;</span>
-                <h2 id="modal-view-title" style="margin-bottom:20px;">Form Input Layer</h2>
-                <div id="modal-container-body"></div>
             </div>
-        </div>
+        </main>
+
     </div>
 
-    <script>
-        // ---- Real backend wiring ----
-        const API_BASE_URL = window.location.origin + '/api';
-
-        let authToken = sessionStorage.getItem('auth_token') || null;
-        let currentUser = sessionStorage.getItem('current_user') || null;
-
-        // Local-only state for sections not yet wired to the backend
-        // (purchases, expenses, debtors, reports). Sales + inventory are real.
-        let activeProfile = JSON.parse(sessionStorage.getItem('local_mock_state') || 'null') || { purchases: [], expenses: [] };
-        let posCart = [];
-        let inventoryCache = [];
-        let salesCache = [];
-
-        async function apiRequest(path, options = {}) {
-            const headers = Object.assign(
-                { 'Content-Type': 'application/json' },
-                options.headers || {}
-            );
-            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
-            const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
-
-            if (res.status === 401) {
-                terminateSession();
-                throw new Error('Session expired. Please log in again.');
-            }
-            if (!res.ok) {
-                let detail = `Request failed (${res.status})`;
-                try { detail = (await res.json()).detail || detail; } catch (e) {}
-                throw new Error(detail);
-            }
-            if (res.status === 204) return null;
-            return res.json();
-        }
-
-        // App Initializer Context Setup
-        window.addEventListener('DOMContentLoaded', () => {
-            updateClockTicker();
-            setInterval(updateClockTicker, 1000);
-
-            if (authToken) {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('dashboard-screen').classList.remove('hidden');
-                document.getElementById('sidebar-profile-title').textContent = 'Shop';
-                document.getElementById('user-display-name').textContent = currentUser || '';
-                dispatchViewSync('dashboard');
-            }
-        });
-
-        function updateClockTicker() {
-            const clockEl = document.getElementById('live-ticker-clock');
-            if (clockEl) clockEl.textContent = new Date().toLocaleTimeString();
-        }
-
-        function toggleAuthForms(toRegister) {
-            document.getElementById('login-card-view').classList.toggle('hidden', toRegister);
-            document.getElementById('register-card-view').classList.toggle('hidden', !toRegister);
-        }
-
-        // Authentication form submissions handlers
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('reg-profile-name').value;
-            const user = document.getElementById('reg-admin-user').value;
-            const pass = document.getElementById('reg-admin-pass').value;
-
-            try {
-                await apiRequest('/auth/register', {
-                    method: 'POST',
-                    body: JSON.stringify({ username: user, password: pass, email: null, role: 'admin' })
-                });
-                showBanner('register-success-banner', 'Account created! Switching to login...', true);
-                setTimeout(() => { toggleAuthForms(false); e.target.reset(); }, 1500);
-            } catch (err) {
-                showBanner('register-err-banner', err.message);
-            }
-            void name; // profile/business naming isn't supported by the backend yet
-        });
-
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const user = document.getElementById('login-user-input').value;
-            const pass = document.getElementById('login-pass-input').value;
-
-            try {
-                const formBody = new URLSearchParams();
-                formBody.append('username', user);
-                formBody.append('password', pass);
-
-                const res = await fetch(`${API_BASE_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formBody
-                });
-                if (!res.ok) {
-                    let detail = 'Invalid access credentials.';
-                    try { detail = (await res.json()).detail || detail; } catch (err) {}
-                    throw new Error(detail);
-                }
-                const data = await res.json();
-                authToken = data.access_token;
-                currentUser = user;
-                sessionStorage.setItem('auth_token', authToken);
-                sessionStorage.setItem('current_user', currentUser);
-
-                document.getElementById('sidebar-profile-title').textContent = 'Shop';
-                document.getElementById('user-display-name').textContent = currentUser;
-
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('dashboard-screen').classList.remove('hidden');
-                dispatchViewSync('dashboard');
-            } catch (err) {
-                showBanner('login-err-banner', err.message || 'Invalid access credentials.');
-            }
-        });
-
-        function terminateSession() {
-            authToken = null;
-            currentUser = null;
-            sessionStorage.removeItem('auth_token');
-            sessionStorage.removeItem('current_user');
-            document.getElementById('dashboard-screen').classList.add('hidden');
-            document.getElementById('auth-screen').classList.remove('hidden');
-        }
-
-        // Sidebar Navigation Routers
-        document.querySelectorAll('.nav-item').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                link.classList.add('active');
-
-                const targetSection = link.dataset.section;
-                document.querySelectorAll('.ui-section').forEach(s => s.classList.add('hidden'));
-                document.getElementById(`${targetSection}-section`).classList.remove('hidden');
-                document.getElementById('viewport-title').textContent = link.textContent.substring(2);
-                
-                dispatchViewSync(targetSection);
-            });
-        });
-
-        // Dynamic State UI Redraw Dispatchers
-        function dispatchViewSync(view) {
-            if (!authToken) return;
-            switch(view) {
-                case 'dashboard': refreshDashboardData(); break;
-                case 'pos': buildPOSWorkspace(); break;
-                case 'inventory': syncInventoryTable(); break;
-                case 'sales': syncSalesTable(); break;
-                case 'purchases': syncPurchasesTable(); break;
-                case 'expenses': syncExpensesTable(); break;
-                case 'debtors': syncDebtorsTable(); break;
-                case 'reports': runProfitLossReport(); break;
-                case 'agent': loadCompareCards(); break;
-                case 'export': initExportSection(); break;
-            }
-        }
-
-        // Business Logic Engines
-        async function refreshDashboardData() {
-            try {
-                const [items, sales] = await Promise.all([
-                    apiRequest('/inventory/'),
-                    apiRequest('/sales/')
-                ]);
-                inventoryCache = items;
-                salesCache = sales;
-
-                const lowStockItems = items.filter(i => Number(i.quantity) <= Number(i.reorder_point));
-
-                const today = new Date().toDateString();
-                const todaysSales = sales.filter(s => new Date(s.sale_date).toDateString() === today);
-                const revenueToday = todaysSales.reduce((sum, s) => sum + Number(s.total_amount), 0);
-
-                document.getElementById('kpi-today-sales').textContent = `${revenueToday.toLocaleString()} TZS`;
-                document.getElementById('kpi-tx-count').textContent = `${todaysSales.length} processed`;
-                document.getElementById('kpi-low-stock').textContent = `${lowStockItems.length} warnings`;
-                document.getElementById('kpi-debtors').textContent = `-- TZS`; // not yet wired to backend
-
-                document.getElementById('dashboard-low-stock-table').innerHTML = lowStockItems.map(i => `
-                    <tr style="color:var(--hl-red); font-weight:600;"><td>${i.name}</td><td>${i.quantity} units left</td><td>Alert limit: ${i.reorder_point}</td></tr>
-                `).join('') || '<tr><td colspan="3" style="color:var(--text-muted)">All levels are healthy.</td></tr>';
-            } catch (err) {
-                console.error('Dashboard load failed:', err);
-            }
-        }
-
-        async function buildPOSWorkspace() {
-            try {
-                inventoryCache = await apiRequest('/inventory/');
-            } catch (err) {
-                alert('Could not load inventory: ' + err.message);
-                inventoryCache = [];
-            }
-            filterPOSCatalog();
-            redrawCart();
-        }
-
-        function filterPOSCatalog() {
-            const query = document.getElementById('pos-search-input').value.toLowerCase();
-            const container = document.getElementById('pos-grid-container');
-            const items = inventoryCache || [];
-
-            container.innerHTML = items.filter(i => i.name.toLowerCase().includes(query)).map(i => `
-                <div class="product-tap-card" onclick="addUnitToCart(${i.id})">
-                    <h4>${i.name}</h4>
-                    <span>Stock: ${i.quantity}</span>
-                    <strong style="color:var(--hl-green); display:block; margin-top:4px;">${Number(i.price).toLocaleString()} TZS</strong>
-                </div>
-            `).join('') || '<p style="color:var(--text-muted); padding:10px;">No matching stock entries.</p>';
-        }
-
-        function addUnitToCart(itemId) {
-            const match = inventoryCache.find(i => i.id === itemId);
-            if (!match || Number(match.quantity) <= 0) { alert('Out of stock unit selection error.'); return; }
-
-            const existing = posCart.find(c => c.id === itemId);
-            if (existing) {
-                if (existing.qty + 1 > Number(match.quantity)) { alert('Insufficient inventory depth.'); return; }
-                existing.qty++;
-            } else {
-                posCart.push({ id: match.id, name: match.name, price: match.price, qty: 1 });
-            }
-            redrawCart();
-        }
-
-        function alterCartQuantity(itemId, offset) {
-            const index = posCart.findIndex(c => c.id === itemId);
-            if(index === -1) return;
-            posCart[index].qty += offset;
-            if(posCart[index].qty <= 0) posCart.splice(index, 1);
-            redrawCart();
-        }
-
-        function redrawCart() {
-            const container = document.getElementById('pos-cart-items-wrapper');
-            let aggregateSum = 0;
-
-            container.innerHTML = posCart.map(c => {
-                const sub = c.price * c.qty;
-                aggregateSum += sub;
-                return `
-                    <div class="cart-item-row">
-                        <div><strong>${c.name}</strong><br><span style="font-size:11px; color:var(--text-muted)">${Number(c.price).toLocaleString()} TZS</span></div>
-                        <div class="cart-qty-controls">
-                            <button onclick="alterCartQuantity(${c.id}, -1)">-</button>
-                            <span style="padding:0 8px;" class="mono-font">${c.qty}</span>
-                            <button onclick="alterCartQuantity(${c.id}, 1)">+</button>
-                        </div>
-                        <div class="mono-font">${sub.toLocaleString()} TZS</div>
-                    </div>
-                `;
-            }).join('') || '<p class="empty-notice" style="color:var(--text-muted); text-align:center; padding-top:20px;">No items selected.</p>';
-
-            document.getElementById('pos-cart-total').textContent = `${aggregateSum.toLocaleString()} TZS`;
-        }
-
-        async function commitCheckout() {
-            if(!posCart.length) return;
-            const customerName = document.getElementById('pos-customer-name').value || "Walk-In Consumer";
-            const customerAddress = document.getElementById('pos-customer-address').value || null;
-            const customerTin = document.getElementById('pos-customer-tin').value || null;
-            const mode = document.getElementById('pos-payment-mode').value;
-
-            if (mode === 'Deni' && customerName === "Walk-In Consumer") {
-                alert("Error: Explicit Account Identification Name required to process Debtors credit allocations.");
-                return;
-            }
-
-            try {
-                // Backend records one line item per Sale row, so a multi-item
-                // cart becomes one POST per line, all tagged with the same customer.
-                for (const c of posCart) {
-                    await apiRequest('/sales/', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            item_id: c.id,
-                            quantity: c.qty,
-                            unit_price: c.price,
-                            customer_name: customerName,
-                            customer_address: customerAddress,
-                            customer_tin: customerTin
-                        })
-                    });
-                }
-
-                posCart = [];
-                document.getElementById('pos-customer-name').value = '';
-                document.getElementById('pos-customer-address').value = '';
-                document.getElementById('pos-customer-tin').value = '';
-                await buildPOSWorkspace();
-                alert("Transaction processing executed successfully.");
-            } catch (err) {
-                alert('Checkout failed: ' + err.message);
-            }
-        }
-
-        // Configuration Form Panels builders
-        async function syncInventoryTable() {
-            const target = document.getElementById('inventory-table-body');
-            try {
-                inventoryCache = await apiRequest('/inventory/');
-            } catch (err) {
-                target.innerHTML = `<tr><td colspan="6" style="color:var(--hl-red);">Failed to load inventory: ${err.message}</td></tr>`;
-                return;
-            }
-
-            target.innerHTML = inventoryCache.map(i => `
-                <tr>
-                    <td class="mono-font">#${i.id}</td>
-                    <td><strong>${i.name}</strong></td>
-                    <td>${i.quantity} units</td>
-                    <td>${Number(i.price).toLocaleString()} TZS</td>
-                    <td>${i.category || '—'}</td>
-                    <td><button onclick="deleteInventoryRecord(${i.id})" class="btn-logout-link">Delete</button></td>
-                </tr>
-            `).join('') || '<tr><td colspan="6" style="color:var(--text-muted); text-align:center;">No stock data entry records found.</td></tr>';
-        }
-
-        function openItemModal() {
-            showFormModal("Register Inventory Specification Card", `
-                <form id="modal-inv-form" onsubmit="saveInventoryItem(event)">
-                    <div class="form-group"><label>Descriptive Label Title</label><input type="text" id="form-name" required placeholder="e.g. 1-inch Brass Valve"></div>
-                    <div class="form-group"><label>Initial Stock Float Depth</label><input type="number" id="form-qty" required value="0"></div>
-                    <div class="form-group"><label>Outward Selling Price (TZS)</label><input type="number" id="form-price" required placeholder="Value structure multiplier"></div>
-                    <div class="form-group"><label>Category</label><input type="text" id="form-category" placeholder="e.g. Plumbing"></div>
-                    <div class="form-group"><label>Minimum Replenishment Floor Alert</label><input type="number" id="form-alert" required value="5"></div>
-                    <button type="submit" class="btn btn-success w-100">Commit Record</button>
-                </form>
-            `);
-        }
-
-        async function saveInventoryItem(e) {
-            e.preventDefault();
-            try {
-                await apiRequest('/inventory/', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        name: document.getElementById('form-name').value,
-                        quantity: Number(document.getElementById('form-qty').value),
-                        price: Number(document.getElementById('form-price').value),
-                        category: document.getElementById('form-category').value || null,
-                        reorder_point: Number(document.getElementById('form-alert').value)
-                    })
-                });
-                closeFormModal();
-                syncInventoryTable();
-            } catch (err) {
-                alert('Could not save item: ' + err.message);
-            }
-        }
-
-        async function deleteInventoryRecord(itemId) {
-            if(!confirm("Purge asset record line entry item parameter row?")) return;
-            try {
-                await apiRequest(`/inventory/${itemId}`, { method: 'DELETE' });
-                syncInventoryTable();
-            } catch (err) {
-                alert('Could not delete item: ' + err.message);
-            }
-        }
-
-        async function syncSalesTable() {
-            const target = document.getElementById('sales-table-body');
-            try {
-                [salesCache, inventoryCache] = await Promise.all([
-                    apiRequest('/sales/'),
-                    apiRequest('/inventory/')
-                ]);
-            } catch (err) {
-                target.innerHTML = `<tr><td colspan="6" style="color:var(--hl-red);">Failed to load sales: ${err.message}</td></tr>`;
-                return;
-            }
-
-            target.innerHTML = salesCache.map(s => {
-                const item = inventoryCache.find(i => i.id === s.item_id);
-                return `
-                <tr>
-                    <td>${new Date(s.sale_date).toLocaleString()}</td>
-                    <td><strong>${s.customer_name || 'Walk-In Consumer'}</strong>${s.customer_tin ? `<br><span style="font-size:11px; color:var(--text-muted)">TIN: ${s.customer_tin}</span>` : ''}</td>
-                    <td>${item ? item.name : '#' + s.item_id}</td>
-                    <td>${s.quantity}</td>
-                    <td class="mono-font">${Number(s.total_amount).toLocaleString()} TZS</td>
-                    <td><span style="font-size:11px; padding:2px 6px; background:#EEE; border-radius:4px;">${s.created_by}</span></td>
-                </tr>`;
-            }).join('') || '<tr><td colspan="6" style="color:var(--text-muted); text-align:center;">No transaction lines logged.</td></tr>';
-        }
-
-        function syncPurchasesTable() {
-            document.getElementById('purchases-table-body').innerHTML = activeProfile.purchases.map(p => `
-                <tr><td>${p.date}</td><td><strong>${p.name}</strong></td><td>+${p.qty} units</td><td>${p.supplier}</td></tr>
-            `).join('') || '<tr><td colspan="4" style="color:var(--text-muted); text-align:center;">No processing logs.</td></tr>';
-        }
-
-        function openPurchaseModal() {
-            const selections = inventoryCache.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
-            showFormModal("Record Inward Supplier Shipment Procurement", `
-                <form onsubmit="savePurchaseRecord(event)">
-                    <div class="form-group"><label>Select Target Inventory Asset</label><select id="p-sku">${selections}</select></div>
-                    <div class="form-group"><label>Inward Volume Quantity</label><input type="number" id="p-qty" required value="10"></div>
-                    <div class="form-group"><label>Supplier Vendor Source Tag</label><input type="text" id="p-vendor" required placeholder="Wholesale source distributor entity"></div>
-                    <button type="submit" class="btn btn-success w-100">Commit and Restock</button>
-                </form>
-            `);
-        }
-
-        function savePurchaseRecord(e) {
-            e.preventDefault();
-            const itemId = Number(document.getElementById('p-sku').value);
-            const qty = Number(document.getElementById('p-qty').value);
-            const supplier = document.getElementById('p-vendor').value;
-
-            const item = inventoryCache.find(i => i.id === itemId);
-            if(item) {
-                // NOTE: this is still local-only (not wired to /api/purchases yet)
-                activeProfile.purchases.push({ date: new Date().toLocaleDateString(), name: item.name, qty: qty, supplier: supplier });
-                saveGlobalState();
-                closeFormModal();
-                syncPurchasesTable();
-            }
-        }
-
-        function syncExpensesTable() {
-            document.getElementById('expenses-table-body').innerHTML = activeProfile.expenses.map(e => `
-                <tr><td>${e.date}</td><td><span style="font-size:12px; font-weight:bold; text-transform:uppercase;">${e.cat}</span></td><td>${e.details}</td><td class="mono-font text-highlight-red">${Number(e.amount).toLocaleString()} TZS</td></tr>
-            `).join('') || '<tr><td colspan="4" style="color:var(--text-muted); text-align:center;">No structural expenses recorded.</td></tr>';
-        }
-
-        function openExpenseModal() {
-            showFormModal("Log Operational Expense Ledger Outflow", `
-                <form onsubmit="saveExpenseRecord(event)">
-                    <div class="form-group"><label>Expense Category Classification</label><select id="e-cat"><option value="Logistics">Logistics Delivery</option><option value="TRA-Tax">TRA Revenue Duties</option><option value="Rent">Facility Rental Allocation</option><option value="Utilities">Utilities Grid</option></select></div>
-                    <div class="form-group"><label>Descriptive Particular details</label><input type="text" id="e-details" required placeholder="Particular context text definition"></div>
-                    <div class="form-group"><label>Outflow Amount Drawdown (TZS)</label><input type="number" id="e-amount" required></div>
-                    <button type="submit" class="btn btn-danger w-100">Post Operational Outflow</button>
-                </form>
-            `);
-        }
-
-        function saveExpenseRecord(e) {
-            e.preventDefault();
-            activeProfile.expenses.push({
-                date: new Date().toLocaleDateString(),
-                cat: document.getElementById('e-cat').value,
-                details: document.getElementById('e-details').value,
-                amount: document.getElementById('e-amount').value
-            });
-            saveGlobalState();
-            closeFormModal();
-            syncExpensesTable();
-        }
-
-        function syncDebtorsTable() {
-            // Debtors/credit-sale tracking isn't wired to the backend yet --
-            // the real Sale model has no payment-method/credit field.
-            document.getElementById('debtors-table-body').innerHTML =
-                '<tr><td colspan="3" style="color:var(--text-muted); text-align:center;">Debtor tracking not yet connected to backend.</td></tr>';
-        }
-
-        function clearDebtorAccount(customer) {
-            alert('Debtor settlement is not yet wired to the backend.');
-        }
-
-        async function runProfitLossReport() {
-            // Approximation from cached inventory/sales (local purchases/expenses
-            // are still mock data). Use GET /api/reports/profit-loss for the real figure.
-            try {
-                if (!salesCache.length) salesCache = await apiRequest('/sales/');
-                if (!inventoryCache.length) inventoryCache = await apiRequest('/inventory/');
-            } catch (err) {
-                console.error('Report load failed:', err);
-            }
-
-            let rev = 0, exp = 0;
-            salesCache.forEach(s => rev += Number(s.total_amount));
-            activeProfile.expenses.forEach(e => exp += Number(e.amount));
-
-            document.getElementById('pl-revenue').textContent = `${rev.toLocaleString()} TZS`;
-            document.getElementById('pl-cogs').textContent = `-- TZS (see /api/reports/profit-loss)`;
-            document.getElementById('pl-expenses').textContent = `${exp.toLocaleString()} TZS`;
-            document.getElementById('pl-net').textContent = `${(rev - exp).toLocaleString()} TZS`;
-        }
-
-        function saveGlobalState() {
-            // Local-only state (purchases/expenses mocks) persisted per browser tab.
-            sessionStorage.setItem('local_mock_state', JSON.stringify({
-                purchases: activeProfile.purchases,
-                expenses: activeProfile.expenses
-            }));
-        }
-
-        // Utility helper methods
-        function showBanner(id, msg, isSuccess = false) {
-            const el = document.getElementById(id);
-            el.textContent = msg;
-            el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 4000);
-        }
-
-        function showFormModal(title, formMarkup) {
-            document.getElementById('modal-view-title').textContent = title;
-            document.getElementById('modal-container-body').innerHTML = formMarkup;
-            document.getElementById('modal-layer').classList.remove('hidden');
-        }
-
-        function closeFormModal() {
-            document.getElementById('modal-layer').classList.add('hidden');
-            document.getElementById('modal-container-body').innerHTML = '';
-        }
-
-        // ============================================================
-        // ZIMBI AI AGENT
-        // ============================================================
-        let agentBusy = false;
-
-        async function sendAgentMessage() {
-            if (agentBusy) return;
-            const input = document.getElementById('agent-input');
-            const msg = input.value.trim();
-            if (!msg) return;
-            input.value = '';
-            appendAgentMsg(msg, 'user');
-            await callAgent(msg);
-        }
-
-        async function quickQuery(msg) {
-            if (agentBusy) return;
-            appendAgentMsg(msg, 'user');
-            await callAgent(msg);
-        }
-
-        async function callAgent(msg) {
-            agentBusy = true;
-            document.getElementById('agent-send-btn').disabled = true;
-            const period = document.getElementById('agent-period-select').value;
-            const typingId = appendAgentMsg('...', 'bot', true);
-            try {
-                const data = await apiRequest('/agent/chat', {
-                    method: 'POST',
-                    body: JSON.stringify({ message: msg, period })
-                });
-                removeAgentMsg(typingId);
-                appendAgentMsg(data.reply, 'bot');
-            } catch(e) {
-                removeAgentMsg(typingId);
-                appendAgentMsg('⚠️ Error: ' + (e.message || 'Could not reach AI service. Check ANTHROPIC_API_KEY is set on server.'), 'bot');
-            } finally {
-                agentBusy = false;
-                document.getElementById('agent-send-btn').disabled = false;
-            }
-        }
-
-        function appendAgentMsg(text, role, isTyping=false) {
-            const container = document.getElementById('agent-chat-messages');
-            const id = 'msg-' + Date.now();
-            const div = document.createElement('div');
-            div.className = `agent-msg agent-msg--${role}${isTyping?' agent-msg-typing':''}`;
-            div.id = id;
-            // Convert markdown-ish text to HTML
-            const formatted = text
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\n/g, '<br>');
-            div.innerHTML = `<div class="agent-msg-bubble">${formatted}</div>`;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-            return id;
-        }
-
-        function removeAgentMsg(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        }
-
-        async function loadCompareCards() {
-            try {
-                const data = await apiRequest('/agent/compare');
-                document.getElementById('compare-loading').style.display = 'none';
-                const container = document.getElementById('compare-cards');
-                container.innerHTML = '';
-
-                const periods = [
-                    { label: '📅 Daily', key: 'daily', a: 'Today', b: 'Yesterday' },
-                    { label: '📆 Monthly', key: 'monthly', a: 'This Month', b: 'Last Month' },
-                    { label: '🗓️ Yearly', key: 'yearly', a: 'This Year', b: 'Last Year' },
-                ];
-
-                periods.forEach(p => {
-                    const d = data[p.key];
-                    const chg = d.change_pct;
-                    const badge = chg > 0 ? `<span class="change-badge change-up">▲ ${chg}%</span>` : chg < 0 ? `<span class="change-badge change-down">▼ ${Math.abs(chg)}%</span>` : `<span class="change-badge change-flat">─ 0%</span>`;
-                    const revA = Object.values(d)[0].revenue;
-                    const revB = Object.values(d)[1].revenue;
-                    const txA = Object.values(d)[0].transactions;
-                    const txB = Object.values(d)[1].transactions;
-                    container.innerHTML += `
-                    <div class="compare-card">
-                        <h5>${p.label} ${badge}</h5>
-                        <div class="compare-row"><span>${p.a}</span><strong>${Number(revA).toLocaleString()} TZS</strong></div>
-                        <div class="compare-row"><span>${p.b}</span><span style="color:var(--text-muted)">${Number(revB).toLocaleString()} TZS</span></div>
-                        <div class="compare-row" style="margin-top:4px; font-size:11px; color:var(--text-muted);"><span>Transactions: ${txA} vs ${txB}</span></div>
-                    </div>`;
-                });
-            } catch(e) {
-                document.getElementById('compare-loading').textContent = 'Could not load comparison data.';
-            }
-        }
-
-        // ============================================================
-        // STOCK IMPORT
-        // ============================================================
-        let importFile = null;
-
-        function handleImportFileSelect(file) {
-            if (!file) return;
-            importFile = file;
-            document.getElementById('import-selected-name').textContent = file.name;
-            document.getElementById('import-selected-file').style.display = 'flex';
-        }
-
-        function handleImportDrop(e) {
-            e.preventDefault();
-            document.getElementById('import-drop-zone').style.borderColor = '';
-            const file = e.dataTransfer.files[0];
-            if (file) handleImportFileSelect(file);
-        }
-
-        async function downloadImportTemplate() {
-            const a = document.createElement('a');
-            a.href = API_BASE_URL + '/agent/import/template';
-            a.download = 'stock_import_template.csv';
-            // Need auth header — fetch and create blob
-            try {
-                const resp = await fetch(a.href, { headers: { Authorization: 'Bearer ' + authToken } });
-                const blob = await resp.blob();
-                a.href = URL.createObjectURL(blob);
-                a.click();
-            } catch(e) { alert('Could not download template'); }
-        }
-
-        async function submitImport() {
-            if (!importFile) return;
-            const btn = document.getElementById('import-submit-btn');
-            btn.textContent = 'Importing...';
-            btn.disabled = true;
-
-            const updateExisting = document.getElementById('import-update-existing').checked;
-            const formData = new FormData();
-            formData.append('file', importFile);
-
-            try {
-                const resp = await fetch(`${API_BASE_URL}/agent/import/stock?update_existing=${updateExisting}`, {
-                    method: 'POST',
-                    headers: { Authorization: 'Bearer ' + authToken },
-                    body: formData
-                });
-                const data = await resp.json();
-                const resultDiv = document.getElementById('import-result');
-                resultDiv.style.display = 'block';
-                const isOk = resp.ok;
-                document.getElementById('import-result-body').innerHTML = isOk ? `
-                    <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
-                        <div style="padding:10px 20px; background:#d4edda; border-radius:8px; text-align:center;"><div style="font-size:22px; font-weight:700; color:#155724;">${data.created}</div><div style="font-size:11px; color:#155724;">Created</div></div>
-                        <div style="padding:10px 20px; background:#d1ecf1; border-radius:8px; text-align:center;"><div style="font-size:22px; font-weight:700; color:#0c5460;">${data.updated}</div><div style="font-size:11px; color:#0c5460;">Updated</div></div>
-                        <div style="padding:10px 20px; background:#f8d7da; border-radius:8px; text-align:center;"><div style="font-size:22px; font-weight:700; color:#721c24;">${data.errors}</div><div style="font-size:11px; color:#721c24;">Errors</div></div>
-                    </div>
-                    ${data.error_details.length ? '<p style="font-size:12px; color:red;"><b>Errors:</b><br>' + data.error_details.map(e=>`Row ${e.row}: ${e.error} ${e.name?'('+e.name+')':''}`).join('<br>') + '</p>' : ''}
-                    <p style="font-size:12px; color:var(--text-muted);">Go to Inventory to see imported items.</p>
-                ` : `<p style="color:red;">${data.detail || JSON.stringify(data)}</p>`;
-            } catch(e) {
-                document.getElementById('import-result').style.display = 'block';
-                document.getElementById('import-result-body').innerHTML = '<p style="color:red;">Import failed: ' + e.message + '</p>';
-            } finally {
-                btn.textContent = 'Import Now';
-                btn.disabled = false;
-            }
-        }
-
-        // ============================================================
-        // PDF INVOICE / QUOTE EXPORT
-        // ============================================================
-        let pdfDocType = 'invoice';
-        let pdfItems = [];
-        let recentExports = [];
-
-        function setDocType(type) {
-            pdfDocType = type;
-            const inv = document.getElementById('doc-type-invoice');
-            const qt = document.getElementById('doc-type-quote');
-            if (type === 'invoice') {
-                inv.style.background = '#2ECC71'; inv.style.color = 'white';
-                qt.style.background = 'transparent'; qt.style.color = 'var(--text-primary)'; qt.style.border = '1px solid var(--border-clean)';
-                document.getElementById('preview-doc-type').textContent = 'INVOICE';
-                document.getElementById('preview-doc-type').style.color = '#2ECC71';
-            } else {
-                qt.style.background = '#2980B9'; qt.style.color = 'white';
-                inv.style.background = 'transparent'; inv.style.color = 'var(--text-primary)'; inv.style.border = '1px solid var(--border-clean)';
-                document.getElementById('preview-doc-type').textContent = 'QUOTE';
-                document.getElementById('preview-doc-type').style.color = '#2980B9';
-            }
-        }
-
-        function addPdfItem() {
-            const id = Date.now();
-            pdfItems.push({ id, desc: '', qty: 1, price: 0 });
-            renderPdfItems();
-        }
-
-        function removePdfItem(id) {
-            pdfItems = pdfItems.filter(i => i.id !== id);
-            renderPdfItems();
-        }
-
-        function renderPdfItems() {
-            const list = document.getElementById('pdf-items-list');
-            list.innerHTML = pdfItems.map(item => `
-                <div class="pdf-item-row">
-                    <input class="desc-inp" type="text" placeholder="Description" value="${item.desc}" onchange="updatePdfItem(${item.id},'desc',this.value)" oninput="updatePdfItem(${item.id},'desc',this.value)">
-                    <input class="qty-inp" type="number" placeholder="Qty" value="${item.qty}" min="0" onchange="updatePdfItem(${item.id},'qty',this.value)" oninput="updatePdfItem(${item.id},'qty',this.value)">
-                    <input class="price-inp" type="number" placeholder="Unit Price" value="${item.price}" min="0" onchange="updatePdfItem(${item.id},'price',this.value)" oninput="updatePdfItem(${item.id},'price',this.value)">
-                    <button class="remove-btn" onclick="removePdfItem(${item.id})">✕</button>
-                </div>
-            `).join('');
-            updatePdfPreview();
-        }
-
-        function updatePdfItem(id, field, value) {
-            const item = pdfItems.find(i => i.id === id);
-            if (!item) return;
-            item[field] = (field === 'qty' || field === 'price') ? parseFloat(value) || 0 : value;
-            updatePdfPreview();
-        }
-
-        function updatePdfPreview() {
-            document.getElementById('preview-customer').textContent = document.getElementById('pdf-customer')?.value || '—';
-            const previewItems = document.getElementById('preview-items');
-            let subtotal = 0;
-            previewItems.innerHTML = pdfItems.map(item => {
-                const total = (item.qty || 0) * (item.price || 0);
-                subtotal += total;
-                return `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 6px;">${item.desc || '—'}</td><td style="padding:4px 6px; text-align:right;">${item.qty}</td><td style="padding:4px 6px; text-align:right;">${total.toLocaleString()}</td></tr>`;
-            }).join('');
-            const vat = subtotal * 0.18;
-            document.getElementById('preview-subtotal').textContent = subtotal.toLocaleString() + ' TZS';
-            document.getElementById('preview-vat').textContent = vat.toLocaleString() + ' TZS';
-            document.getElementById('preview-total').textContent = (subtotal + vat).toLocaleString() + ' TZS';
-        }
-
-        async function generatePdf() {
-            const customer = document.getElementById('pdf-customer').value.trim();
-            if (!customer) { alert('Customer name is required'); return; }
-            if (!pdfItems.length) { alert('Add at least one line item'); return; }
-
-            const btn = document.getElementById('pdf-generate-btn');
-            btn.textContent = '⏳ Generating...';
-            btn.disabled = true;
-
-            const payload = {
-                invoice_number: document.getElementById('pdf-inv-number').value || 'INV-001',
-                date: document.getElementById('pdf-date').value,
-                customer_name: customer,
-                customer_address: document.getElementById('pdf-address').value,
-                customer_tin: document.getElementById('pdf-tin').value,
-                notes: document.getElementById('pdf-notes').value,
-                type: pdfDocType,
-                items: pdfItems.map(i => ({ description: i.desc, quantity: i.qty, unit_price: i.price }))
-            };
-
-            try {
-                const resp = await fetch(`${API_BASE_URL}/agent/export/invoice`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
-                    body: JSON.stringify(payload)
-                });
-                if (!resp.ok) {
-                    const err = await resp.json();
-                    throw new Error(err.detail || 'PDF generation failed');
-                }
-                const blob = await resp.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Zimbermanne_${pdfDocType === 'quote' ? 'Quote' : 'Invoice'}_${payload.invoice_number}.pdf`;
-                a.click();
-                URL.revokeObjectURL(url);
-
-                // Track recent exports
-                recentExports.unshift({ type: pdfDocType, no: payload.invoice_number, customer, ts: new Date().toLocaleTimeString() });
-                if (recentExports.length > 5) recentExports.pop();
-                document.getElementById('recent-exports-list').innerHTML = recentExports.map(e =>
-                    `<div style="margin-bottom:6px; padding:6px 10px; background:white; border-radius:6px; font-size:12px;">📄 ${e.type === 'quote' ? 'Quote' : 'Invoice'} #${e.no} — ${e.customer} <span style="color:var(--text-muted); float:right;">${e.ts}</span></div>`
-                ).join('');
-            } catch(e) {
-                alert('Error: ' + e.message);
-            } finally {
-                btn.textContent = '⬇ Generate & Download PDF';
-                btn.disabled = false;
-            }
-        }
-
-        // Init PDF section with one blank item and today's date
-        function initExportSection() {
-            if (pdfItems.length === 0) { addPdfItem(); }
-            const todayInput = document.getElementById('pdf-date');
-            if (todayInput && !todayInput.value) {
-                todayInput.value = new Date().toISOString().split('T')[0];
-            }
-        }
-
-        // Wire customer name preview update
-        document.addEventListener('DOMContentLoaded', () => {
-            const custInp = document.getElementById('pdf-customer');
-            if (custInp) custInp.addEventListener('input', updatePdfPreview);
-        });
-    </script>
 </body>
 </html>
