@@ -2,8 +2,9 @@ from fastapi import FastAPI, Depends, HTTPException, status, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from contextlib import asynccontextmanager
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import sys
@@ -15,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import engine, Base, get_db
 from models import InventoryItem, Sale, Debtor, Creditor, Expense, User
 from report_generator import ReportGenerator
-from auth import get_current_user
+from auth import get_current_user, get_password_hash, verify_password, create_access_token
 from activity import log_activity
 from routers import auth, inventory, sales, purchases, expenses, reports, users, activity, backup, agent
 
@@ -27,21 +28,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Zimbermanne Retail OS Engine",
-    description="Advanced Accounting, Debtors, Creditors & POS API",
-    version="2.5.0",
+    version="2.6.0",
     lifespan=lifespan
 )
 
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- Real, database-backed mounted routers ---
+# Mount all core routers
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(inventory.router, prefix="/api/inventory", tags=["inventory"])
 app.include_router(sales.router, prefix="/api/sales", tags=["sales"])
@@ -54,9 +53,15 @@ app.include_router(backup.router, prefix="/api/backup", tags=["backup"])
 app.include_router(agent.router, prefix="/api/agent", tags=["agent"])
 
 
-# --- PYDANTIC SCHEMAS FOR STRICT BODY PARSING ---
+# --- SCHEMAS FOR INCOMING INPUT VALIDATION ---
+class UserRegisterPayload(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: str = "user@zimbermanne.com"
+    password: str = Field(..., min_length=5)
+    role: str = "employee"
+
 class PaymentPayload(BaseModel):
-    amount: float = Field(..., gt=0, description="Payment transaction amount")
+    amount: float = Field(..., gt=0)
 
 class CartItemPayload(BaseModel):
     id: int
@@ -69,13 +74,48 @@ class CheckoutPayload(BaseModel):
     items: list[CartItemPayload]
 
 
-# --- REAL LIVE DATABASE API ENDPOINTS ---
+# --- OPEN AUTHENTICATION & CREATION PATHWAYS ---
+
+@app.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
+async def register_new_user(payload: UserRegisterPayload, db: Session = Depends(get_db)):
+    """Open user creation endpoint to avoid 404 errors during registration"""
+    existing_user = db.query(User).filter(User.username == payload.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username is already taken inside system schemas.")
+        
+    new_user = User(
+        username=payload.username,
+        email=payload.email,
+        hashed_password=get_password_hash(payload.password),
+        role=payload.role,
+        is_active=True,
+        created_at=datetime.now(timezone.utc)
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"status": "Success", "username": new_user.username, "role": new_user.role}
+
+
+@app.post("/api/auth/login")
+async def unified_login_route(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """Handles secure high-compatibility system login validation tasks"""
+    user = db.query(User).filter(User.username == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid access credentials.")
+        
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="User account has been deactivated.")
+        
+    access_token = create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+# --- PROTECTED REVENUE & TRANSACTIONS API ENDPOINTS ---
 
 @app.get("/api/reports/daily-summary")
 async def get_daily_summary(db: Session = Depends(get_db)):
-    """Fetch real aggregate operational business metrics for the current day using UTC timezone normalization"""
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    
     total_earnings = db.query(func.sum(Sale.total_amount)).filter(Sale.timestamp >= today_start).scalar() or 0.0
     low_stock_count = db.query(InventoryItem).filter(InventoryItem.quantity <= InventoryItem.reorder_point).count()
     items_sold = db.query(func.sum(Sale.quantity)).filter(Sale.timestamp >= today_start).scalar() or 0
@@ -87,10 +127,8 @@ async def get_daily_summary(db: Session = Depends(get_db)):
         "low_stock_count": low_stock_count
     }
 
-
 @app.get("/api/ledgers/debtors")
 async def get_debtors(db: Session = Depends(get_db)):
-    """Fetch all outstanding customer and company debts (Deni) directly from the database"""
     debtors = db.query(Debtor).filter(Debtor.status != "paid").all()
     return [
         {
@@ -103,19 +141,16 @@ async def get_debtors(db: Session = Depends(get_db)):
         } for d in debtors
     ]
 
-
 @app.post("/api/ledgers/debtors/pay/{debt_id}")
 async def pay_debtor(debt_id: int, payload: PaymentPayload, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Process a full or partial database payment update using strict validation schemas"""
     debt_record = db.query(Debtor).filter(Debtor.id == debt_id).first()
     if not debt_record:
-        raise HTTPException(status_code=404, detail="Debtor record not found in system schema.")
+        raise HTTPException(status_code=404, detail="Debtor record not found.")
     
-    amount_to_pay = payload.amount
-    if amount_to_pay > debt_record.amount:
-        raise HTTPException(status_code=400, detail=f"Payment amount exceeds outstanding debt of {debt_record.amount}")
+    if payload.amount > debt_record.amount:
+        raise HTTPException(status_code=400, detail="Payment amount exceeds outstanding debt.")
 
-    debt_record.amount -= amount_to_pay
+    debt_record.amount -= payload.amount
     if debt_record.amount <= 0:
         debt_record.amount = 0
         debt_record.status = "paid"
@@ -123,16 +158,11 @@ async def pay_debtor(debt_id: int, payload: PaymentPayload, db: Session = Depend
         debt_record.status = "partial"
         
     db.commit()
-    db.refresh(debt_record)
-    
-    # Secure sync activity call in an async handler context
-    await log_activity(db, current_user.username, "DEBT_PAYMENT", f"Paid TZS {amount_to_pay} for debt ID: {debt_id}")
+    await log_activity(db, current_user.username, "DEBT_PAYMENT", f"Paid TZS {payload.amount} for debt ID: {debt_id}")
     return {"status": "Success", "remaining": debt_record.amount}
-
 
 @app.get("/api/ledgers/creditors")
 async def get_creditors(db: Session = Depends(get_db)):
-    """Fetch all supplier tracking balances and pending supply costs (Madeni ya Wauzaji)"""
     creditors = db.query(Creditor).filter(Creditor.status != "paid").all()
     return [
         {
@@ -145,25 +175,18 @@ async def get_creditors(db: Session = Depends(get_db)):
         } for c in creditors
     ]
 
-
 @app.post("/api/sales/checkout")
 async def process_checkout(payload: CheckoutPayload, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Processes sales using row-level FOR UPDATE locks to completely neutralize race conditions"""
     total_bill = 0.0
     sales_to_add = []
     
-    # Process stock adjustments inside a transactional unit
     for product_item in payload.items:
-        # Race condition mitigation: Lock row until transaction closes
         db_item = db.query(InventoryItem).filter(InventoryItem.id == product_item.id).with_for_update().first()
         if not db_item:
-            raise HTTPException(status_code=404, detail=f"Stock item ID {product_item.id} missing from catalog database.")
+            raise HTTPException(status_code=404, detail=f"Stock item ID {product_item.id} missing.")
             
         if db_item.quantity < product_item.qty:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Insufficient stock for '{db_item.name}' ({db_item.quantity} available)."
-            )
+            raise HTTPException(status_code=400, detail=f"Insufficient stock for '{db_item.name}'.")
             
         db_item.quantity -= product_item.qty
         line_cost = db_item.price * product_item.qty
@@ -174,7 +197,7 @@ async def process_checkout(payload: CheckoutPayload, db: Session = Depends(get_d
             quantity=product_item.qty,
             total_amount=line_cost,
             timestamp=datetime.now(timezone.utc),
-            created_by=current_user.username  # Audit trail resolution
+            created_by=current_user.username
         )
         sales_to_add.append(new_sale_log)
         
@@ -192,18 +215,16 @@ async def process_checkout(payload: CheckoutPayload, db: Session = Depends(get_d
         db.add(new_debt_entry)
         
     db.commit()
-    await log_activity(db, current_user.username, "COMPLETED_SALE", f"Total: TZS {total_bill} via {payload.payment_mode}")
+    await log_activity(db, current_user.username, "COMPLETED_SALE", f"Total: TZS {total_bill}")
     return {"status": "Approved", "invoice_total": total_bill, "mode": payload.payment_mode}
-
 
 @app.get("/api/reports/full-audit")
 async def get_full_audit_report(db: Session = Depends(get_db)):
-    """Wraps database instances directly into the analytics reporting service loop"""
     generator = ReportGenerator(db)
     return generator.generate_full_audit_report()
 
 
-# --- UI STATICS & SAFE ASSET/FRONTEND ROUTING ---
+# --- STATIC RENDERING AND SPA CATCHALL RULES ---
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -216,17 +237,12 @@ async def serve_root():
 
 @app.get("/{catchall:path}")
 async def serve_frontend(catchall: str):
-    # Shield API paths from hitting front-end index catchalls mistakenly
     if catchall.startswith("api/"):
         raise HTTPException(status_code=404, detail="API endpoint not found.")
-        
-    # Check if the requested file explicitly exists within the static folder
     static_file_path = os.path.join("static", catchall)
     if os.path.exists(static_file_path) and os.path.isfile(static_file_path):
         return FileResponse(static_file_path)
-        
-    # Fallback to SPA structural routing layout shell
     index_path = os.path.join("static", "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    raise HTTPException(status_code=404, detail="Resource path unavailable.")
+    raise HTTPException(status_code=404, detail="Resource unavailable.")
