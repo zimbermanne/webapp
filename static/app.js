@@ -1,6 +1,18 @@
 const API_BASE_URL = '/api';
 
 let currentToken = localStorage.getItem('token');
+
+// ── Google OAuth: pick up ?token= from the redirect URL ──────────────────────
+(function handleGoogleOAuthRedirect() {
+    const params = new URLSearchParams(window.location.search);
+    const tokenFromGoogle = params.get('token');
+    if (tokenFromGoogle) {
+        localStorage.setItem('token', tokenFromGoogle);
+        currentToken = tokenFromGoogle;
+        // Clean the URL so the token isn't visible in the address bar
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+})();
 let currentUser = null;
 let catalogItemsCache = [];
 let shoppingCart = [];

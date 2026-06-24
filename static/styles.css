@@ -342,3 +342,47 @@ tr:last-child td { border-bottom: none; }
 .modal-layer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(8,13,18,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000; }
 .modal-surface { width: 90%; max-width: 500px; position: relative; animation: slideUp 0.2s ease-out; }
 .modal-dismiss-trigger { position: absolute; top: 16px; right: 20px; font-size: 24px; cursor: pointer; color: var(--text-muted); }
+
+/* ── Google OAuth login button ──────────────────────────────── */
+.oauth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 16px 0;
+    color: #888;
+    font-size: 0.8rem;
+}
+.oauth-divider::before,
+.oauth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #333;
+}
+.oauth-divider span {
+    padding: 0 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.btn-google-login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    background: #fff;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+.btn-google-login:hover {
+    background: #f8f9fa;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
