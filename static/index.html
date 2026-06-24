@@ -385,11 +385,6 @@
                 <div id="login-err-banner" class="error-banner hidden"></div>
                 <form id="login-form">
                     <div class="form-group">
-                        <label>Active Profile Context</label>
-                        <select id="login-profile-select">
-                            </select>
-                    </div>
-                    <div class="form-group">
                         <label>Username</label>
                         <input type="text" id="login-user-input" required placeholder="Enter username...">
                     </div>
@@ -561,6 +556,14 @@
                                         <input type="text" id="pos-customer-name" placeholder="Required for Credit (Deni)">
                                     </div>
                                     <div class="form-group">
+                                        <label>Customer Address <span style="color:var(--text-muted); font-weight:normal;">(optional)</span></label>
+                                        <input type="text" id="pos-customer-address" placeholder="e.g. Sinza, Dar es Salaam">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>TIN No. <span style="color:var(--text-muted); font-weight:normal;">(optional)</span></label>
+                                        <input type="text" id="pos-customer-tin" placeholder="e.g. 123-456-789">
+                                    </div>
+                                    <div class="form-group">
                                         <label>Settlement Mode Type</label>
                                         <select id="pos-payment-mode">
                                             <option value="Cash">Cash (Taslimu)</option>
@@ -649,29 +652,58 @@
     </div>
 
     <script>
-        // Core Reactive Mock System Database Engine State Arrays
-        let sysProfiles = JSON.parse(localStorage.getItem('sys_profiles')) || [
-            { id: "hardware", name: "Zimbermanne Hardware", user: "admin", pass: "admin", inventory: [], sales: [], purchases: [], expenses: [] }
-        ];
-        
-        let activeProfile = null;
+        // ---- Real backend wiring ----
+        const API_BASE_URL = window.location.origin + '/api';
+
+        let authToken = sessionStorage.getItem('auth_token') || null;
+        let currentUser = sessionStorage.getItem('current_user') || null;
+
+        // Local-only state for sections not yet wired to the backend
+        // (purchases, expenses, debtors, reports). Sales + inventory are real.
+        let activeProfile = JSON.parse(sessionStorage.getItem('local_mock_state') || 'null') || { purchases: [], expenses: [] };
         let posCart = [];
+        let inventoryCache = [];
+        let salesCache = [];
+
+        async function apiRequest(path, options = {}) {
+            const headers = Object.assign(
+                { 'Content-Type': 'application/json' },
+                options.headers || {}
+            );
+            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+            const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+
+            if (res.status === 401) {
+                terminateSession();
+                throw new Error('Session expired. Please log in again.');
+            }
+            if (!res.ok) {
+                let detail = `Request failed (${res.status})`;
+                try { detail = (await res.json()).detail || detail; } catch (e) {}
+                throw new Error(detail);
+            }
+            if (res.status === 204) return null;
+            return res.json();
+        }
 
         // App Initializer Context Setup
         window.addEventListener('DOMContentLoaded', () => {
-            syncProfileSelectDropdown();
             updateClockTicker();
             setInterval(updateClockTicker, 1000);
+
+            if (authToken) {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('dashboard-screen').classList.remove('hidden');
+                document.getElementById('sidebar-profile-title').textContent = 'Shop';
+                document.getElementById('user-display-name').textContent = currentUser || '';
+                dispatchViewSync('dashboard');
+            }
         });
 
         function updateClockTicker() {
             const clockEl = document.getElementById('live-ticker-clock');
             if (clockEl) clockEl.textContent = new Date().toLocaleTimeString();
-        }
-
-        function syncProfileSelectDropdown() {
-            const select = document.getElementById('login-profile-select');
-            select.innerHTML = sysProfiles.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
         }
 
         function toggleAuthForms(toRegister) {
@@ -680,49 +712,67 @@
         }
 
         // Authentication form submissions handlers
-        document.getElementById('register-form').addEventListener('submit', (e) => {
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('reg-profile-name').value;
             const user = document.getElementById('reg-admin-user').value;
             const pass = document.getElementById('reg-admin-pass').value;
-            const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
 
-            if (sysProfiles.some(p => p.id === id)) {
-                showBanner('register-err-banner', 'Profile identifier already exists.');
-                return;
+            try {
+                await apiRequest('/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ username: user, password: pass, email: null, role: 'admin' })
+                });
+                showBanner('register-success-banner', 'Account created! Switching to login...', true);
+                setTimeout(() => { toggleAuthForms(false); e.target.reset(); }, 1500);
+            } catch (err) {
+                showBanner('register-err-banner', err.message);
             }
-
-            sysProfiles.push({ id, name, user, pass, inventory: [], sales: [], purchases: [], expenses: [] });
-            localStorage.setItem('sys_profiles', JSON.stringify(sysProfiles));
-            
-            showBanner('register-success-banner', 'Profile deployed successfully! Switching fields...', true);
-            syncProfileSelectDropdown();
-            setTimeout(() => { toggleAuthForms(false); e.target.reset(); }, 2000);
+            void name; // profile/business naming isn't supported by the backend yet
         });
 
-        document.getElementById('login-form').addEventListener('submit', (e) => {
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const selectedId = document.getElementById('login-profile-select').value;
             const user = document.getElementById('login-user-input').value;
             const pass = document.getElementById('login-pass-input').value;
 
-            const profileMatch = sysProfiles.find(p => p.id === selectedId && p.user === user && p.pass === pass);
-            if (!profileMatch) {
-                showBanner('login-err-banner', 'Invalid access credentials.');
-                return;
-            }
+            try {
+                const formBody = new URLSearchParams();
+                formBody.append('username', user);
+                formBody.append('password', pass);
 
-            activeProfile = profileMatch;
-            document.getElementById('sidebar-profile-title').textContent = activeProfile.name;
-            document.getElementById('user-display-name').textContent = activeProfile.user;
-            
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('dashboard-screen').classList.remove('hidden');
-            dispatchViewSync('dashboard');
+                const res = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formBody
+                });
+                if (!res.ok) {
+                    let detail = 'Invalid access credentials.';
+                    try { detail = (await res.json()).detail || detail; } catch (err) {}
+                    throw new Error(detail);
+                }
+                const data = await res.json();
+                authToken = data.access_token;
+                currentUser = user;
+                sessionStorage.setItem('auth_token', authToken);
+                sessionStorage.setItem('current_user', currentUser);
+
+                document.getElementById('sidebar-profile-title').textContent = 'Shop';
+                document.getElementById('user-display-name').textContent = currentUser;
+
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('dashboard-screen').classList.remove('hidden');
+                dispatchViewSync('dashboard');
+            } catch (err) {
+                showBanner('login-err-banner', err.message || 'Invalid access credentials.');
+            }
         });
 
         function terminateSession() {
-            activeProfile = null;
+            authToken = null;
+            currentUser = null;
+            sessionStorage.removeItem('auth_token');
+            sessionStorage.removeItem('current_user');
             document.getElementById('dashboard-screen').classList.add('hidden');
             document.getElementById('auth-screen').classList.remove('hidden');
         }
@@ -745,7 +795,7 @@
 
         // Dynamic State UI Redraw Dispatchers
         function dispatchViewSync(view) {
-            if (!activeProfile) return;
+            if (!authToken) return;
             switch(view) {
                 case 'dashboard': refreshDashboardData(); break;
                 case 'pos': buildPOSWorkspace(); break;
@@ -759,32 +809,41 @@
         }
 
         // Business Logic Engines
-        function refreshDashboardData() {
-            const items = activeProfile.inventory || [];
-            const lowStockItems = items.filter(i => Number(i.qty) <= Number(i.minAlert));
-            
-            let revenueToday = 0;
-            let transactionCount = activeProfile.sales.length;
-            activeProfile.sales.forEach(s => revenueToday += Number(s.subtotal));
+        async function refreshDashboardData() {
+            try {
+                const [items, sales] = await Promise.all([
+                    apiRequest('/inventory/'),
+                    apiRequest('/sales/')
+                ]);
+                inventoryCache = items;
+                salesCache = sales;
 
-            let debtorAggregate = 0;
-            const trackingDebts = {};
-            activeProfile.sales.forEach(s => {
-                if(s.method === 'Deni') trackingDebts[s.customer] = (trackingDebts[s.customer]||0) + Number(s.subtotal);
-            });
-            Object.values(trackingDebts).forEach(v => debtorAggregate += v);
+                const lowStockItems = items.filter(i => Number(i.quantity) <= Number(i.reorder_point));
 
-            document.getElementById('kpi-today-sales').textContent = `${revenueToday.toLocaleString()} TZS`;
-            document.getElementById('kpi-tx-count').textContent = `${transactionCount} processed`;
-            document.getElementById('kpi-low-stock').textContent = `${lowStockItems.length} warnings`;
-            document.getElementById('kpi-debtors').textContent = `${debtorAggregate.toLocaleString()} TZS`;
-            
-            document.getElementById('dashboard-low-stock-table').innerHTML = lowStockItems.map(i => `
-                <tr style="color:var(--hl-red); font-weight:600;"><td>${i.name}</td><td>${i.qty} units left</td><td>Alert limit: ${i.minAlert}</td></tr>
-            `).join('') || '<tr><td colspan="3" style="color:var(--text-muted)">All levels are healthy.</td></tr>';
+                const today = new Date().toDateString();
+                const todaysSales = sales.filter(s => new Date(s.sale_date).toDateString() === today);
+                const revenueToday = todaysSales.reduce((sum, s) => sum + Number(s.total_amount), 0);
+
+                document.getElementById('kpi-today-sales').textContent = `${revenueToday.toLocaleString()} TZS`;
+                document.getElementById('kpi-tx-count').textContent = `${todaysSales.length} processed`;
+                document.getElementById('kpi-low-stock').textContent = `${lowStockItems.length} warnings`;
+                document.getElementById('kpi-debtors').textContent = `-- TZS`; // not yet wired to backend
+
+                document.getElementById('dashboard-low-stock-table').innerHTML = lowStockItems.map(i => `
+                    <tr style="color:var(--hl-red); font-weight:600;"><td>${i.name}</td><td>${i.quantity} units left</td><td>Alert limit: ${i.reorder_point}</td></tr>
+                `).join('') || '<tr><td colspan="3" style="color:var(--text-muted)">All levels are healthy.</td></tr>';
+            } catch (err) {
+                console.error('Dashboard load failed:', err);
+            }
         }
 
-        function buildPOSWorkspace() {
+        async function buildPOSWorkspace() {
+            try {
+                inventoryCache = await apiRequest('/inventory/');
+            } catch (err) {
+                alert('Could not load inventory: ' + err.message);
+                inventoryCache = [];
+            }
             filterPOSCatalog();
             redrawCart();
         }
@@ -792,33 +851,33 @@
         function filterPOSCatalog() {
             const query = document.getElementById('pos-search-input').value.toLowerCase();
             const container = document.getElementById('pos-grid-container');
-            const items = activeProfile.inventory || [];
+            const items = inventoryCache || [];
 
             container.innerHTML = items.filter(i => i.name.toLowerCase().includes(query)).map(i => `
-                <div class="product-tap-card" onclick="addUnitToCart('${i.sku}')">
+                <div class="product-tap-card" onclick="addUnitToCart(${i.id})">
                     <h4>${i.name}</h4>
-                    <span>Stock: ${i.qty}</span>
+                    <span>Stock: ${i.quantity}</span>
                     <strong style="color:var(--hl-green); display:block; margin-top:4px;">${Number(i.price).toLocaleString()} TZS</strong>
                 </div>
             `).join('') || '<p style="color:var(--text-muted); padding:10px;">No matching stock entries.</p>';
         }
 
-        function addUnitToCart(sku) {
-            const match = activeProfile.inventory.find(i => i.sku === sku);
-            if (!match || Number(match.qty) <= 0) { alert('Out of stock unit selection error.'); return; }
-            
-            const existing = posCart.find(c => c.sku === sku);
+        function addUnitToCart(itemId) {
+            const match = inventoryCache.find(i => i.id === itemId);
+            if (!match || Number(match.quantity) <= 0) { alert('Out of stock unit selection error.'); return; }
+
+            const existing = posCart.find(c => c.id === itemId);
             if (existing) {
-                if (existing.qty + 1 > Number(match.qty)) { alert('Insufficient inventory depth.'); return; }
+                if (existing.qty + 1 > Number(match.quantity)) { alert('Insufficient inventory depth.'); return; }
                 existing.qty++;
             } else {
-                posCart.push({ sku: match.sku, name: match.name, price: match.price, qty: 1 });
+                posCart.push({ id: match.id, name: match.name, price: match.price, qty: 1 });
             }
             redrawCart();
         }
 
-        function alterCartQuantity(sku, offset) {
-            const index = posCart.findIndex(c => c.sku === sku);
+        function alterCartQuantity(itemId, offset) {
+            const index = posCart.findIndex(c => c.id === itemId);
             if(index === -1) return;
             posCart[index].qty += offset;
             if(posCart[index].qty <= 0) posCart.splice(index, 1);
@@ -836,9 +895,9 @@
                     <div class="cart-item-row">
                         <div><strong>${c.name}</strong><br><span style="font-size:11px; color:var(--text-muted)">${Number(c.price).toLocaleString()} TZS</span></div>
                         <div class="cart-qty-controls">
-                            <button onclick="alterCartQuantity('${c.sku}', -1)">-</button>
+                            <button onclick="alterCartQuantity(${c.id}, -1)">-</button>
                             <span style="padding:0 8px;" class="mono-font">${c.qty}</span>
-                            <button onclick="alterCartQuantity('${c.sku}', 1)">+</button>
+                            <button onclick="alterCartQuantity(${c.id}, 1)">+</button>
                         </div>
                         <div class="mono-font">${sub.toLocaleString()} TZS</div>
                     </div>
@@ -848,49 +907,64 @@
             document.getElementById('pos-cart-total').textContent = `${aggregateSum.toLocaleString()} TZS`;
         }
 
-        function commitCheckout() {
+        async function commitCheckout() {
             if(!posCart.length) return;
-            const customer = document.getElementById('pos-customer-name').value || "Walk-In Consumer";
+            const customerName = document.getElementById('pos-customer-name').value || "Walk-In Consumer";
+            const customerAddress = document.getElementById('pos-customer-address').value || null;
+            const customerTin = document.getElementById('pos-customer-tin').value || null;
             const mode = document.getElementById('pos-payment-mode').value;
 
-            if (mode === 'Deni' && customer === "Walk-In Consumer") {
+            if (mode === 'Deni' && customerName === "Walk-In Consumer") {
                 alert("Error: Explicit Account Identification Name required to process Debtors credit allocations.");
                 return;
             }
 
-            // Deduct depth inventory properties & write lines transaction logs
-            posCart.forEach(c => {
-                const liveItem = activeProfile.inventory.find(i => i.sku === c.sku);
-                if(liveItem) liveItem.qty = Number(liveItem.qty) - c.qty;
-                
-                activeProfile.sales.push({
-                    ts: new Date().toLocaleString(),
-                    customer,
-                    item: c.name,
-                    qty: c.qty,
-                    subtotal: c.price * c.qty,
-                    method: mode
-                });
-            });
+            try {
+                // Backend records one line item per Sale row, so a multi-item
+                // cart becomes one POST per line, all tagged with the same customer.
+                for (const c of posCart) {
+                    await apiRequest('/sales/', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            item_id: c.id,
+                            quantity: c.qty,
+                            unit_price: c.price,
+                            customer_name: customerName,
+                            customer_address: customerAddress,
+                            customer_tin: customerTin
+                        })
+                    });
+                }
 
-            saveGlobalState();
-            posCart = [];
-            document.getElementById('pos-customer-name').value = '';
-            buildPOSWorkspace();
-            alert("Transaction processing executed successfully.");
+                posCart = [];
+                document.getElementById('pos-customer-name').value = '';
+                document.getElementById('pos-customer-address').value = '';
+                document.getElementById('pos-customer-tin').value = '';
+                await buildPOSWorkspace();
+                alert("Transaction processing executed successfully.");
+            } catch (err) {
+                alert('Checkout failed: ' + err.message);
+            }
         }
 
         // Configuration Form Panels builders
-        function syncInventoryTable() {
+        async function syncInventoryTable() {
             const target = document.getElementById('inventory-table-body');
-            target.innerHTML = activeProfile.inventory.map((i, index) => `
+            try {
+                inventoryCache = await apiRequest('/inventory/');
+            } catch (err) {
+                target.innerHTML = `<tr><td colspan="6" style="color:var(--hl-red);">Failed to load inventory: ${err.message}</td></tr>`;
+                return;
+            }
+
+            target.innerHTML = inventoryCache.map(i => `
                 <tr>
-                    <td class="mono-font">${i.sku}</td>
+                    <td class="mono-font">#${i.id}</td>
                     <td><strong>${i.name}</strong></td>
-                    <td>${i.qty} units</td>
+                    <td>${i.quantity} units</td>
                     <td>${Number(i.price).toLocaleString()} TZS</td>
-                    <td>${Number(i.cost).toLocaleString()} TZS</td>
-                    <td><button onclick="deleteInventoryRecord(${index})" class="btn-logout-link">Delete</button></td>
+                    <td>${i.category || '—'}</td>
+                    <td><button onclick="deleteInventoryRecord(${i.id})" class="btn-logout-link">Delete</button></td>
                 </tr>
             `).join('') || '<tr><td colspan="6" style="color:var(--text-muted); text-align:center;">No stock data entry records found.</td></tr>';
         }
@@ -898,44 +972,70 @@
         function openItemModal() {
             showFormModal("Register Inventory Specification Card", `
                 <form id="modal-inv-form" onsubmit="saveInventoryItem(event)">
-                    <div class="form-group"><label>Unique Sku / barcode Code</label><input type="text" id="form-sku" required placeholder="e.g. PIPE-12"></div>
                     <div class="form-group"><label>Descriptive Label Title</label><input type="text" id="form-name" required placeholder="e.g. 1-inch Brass Valve"></div>
                     <div class="form-group"><label>Initial Stock Float Depth</label><input type="number" id="form-qty" required value="0"></div>
                     <div class="form-group"><label>Outward Selling Price (TZS)</label><input type="number" id="form-price" required placeholder="Value structure multiplier"></div>
-                    <div class="form-group"><label>Inward Base Supply Cost (TZS)</label><input type="number" id="form-cost" required placeholder="Value cost basis"></div>
+                    <div class="form-group"><label>Category</label><input type="text" id="form-category" placeholder="e.g. Plumbing"></div>
                     <div class="form-group"><label>Minimum Replenishment Floor Alert</label><input type="number" id="form-alert" required value="5"></div>
                     <button type="submit" class="btn btn-success w-100">Commit Record</button>
                 </form>
             `);
         }
 
-        function saveInventoryItem(e) {
+        async function saveInventoryItem(e) {
             e.preventDefault();
-            activeProfile.inventory.push({
-                sku: document.getElementById('form-sku').value,
-                name: document.getElementById('form-name').value,
-                qty: document.getElementById('form-qty').value,
-                price: document.getElementById('form-price').value,
-                cost: document.getElementById('form-cost').value,
-                minAlert: document.getElementById('form-alert').value
-            });
-            saveGlobalState();
-            closeFormModal();
-            syncInventoryTable();
-        }
-
-        function deleteInventoryRecord(idx) {
-            if(confirm("Purge asset record line entry item parameter row?")) {
-                activeProfile.inventory.splice(idx,1);
-                saveGlobalState();
+            try {
+                await apiRequest('/inventory/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: document.getElementById('form-name').value,
+                        quantity: Number(document.getElementById('form-qty').value),
+                        price: Number(document.getElementById('form-price').value),
+                        category: document.getElementById('form-category').value || null,
+                        reorder_point: Number(document.getElementById('form-alert').value)
+                    })
+                });
+                closeFormModal();
                 syncInventoryTable();
+            } catch (err) {
+                alert('Could not save item: ' + err.message);
             }
         }
 
-        function syncSalesTable() {
-            document.getElementById('sales-table-body').innerHTML = activeProfile.sales.map(s => `
-                <tr><td>${s.ts}</td><td><strong>${s.customer}</strong></td><td>${s.item}</td><td>${s.qty}</td><td class="mono-font">${Number(s.subtotal).toLocaleString()} TZS</td><td><span style="font-size:11px; padding:2px 6px; background:#EEE; border-radius:4px;">${s.method}</span></td></tr>
-            `).join('') || '<tr><td colspan="6" style="color:var(--text-muted); text-align:center;">No transaction lines logged.</td></tr>';
+        async function deleteInventoryRecord(itemId) {
+            if(!confirm("Purge asset record line entry item parameter row?")) return;
+            try {
+                await apiRequest(`/inventory/${itemId}`, { method: 'DELETE' });
+                syncInventoryTable();
+            } catch (err) {
+                alert('Could not delete item: ' + err.message);
+            }
+        }
+
+        async function syncSalesTable() {
+            const target = document.getElementById('sales-table-body');
+            try {
+                [salesCache, inventoryCache] = await Promise.all([
+                    apiRequest('/sales/'),
+                    apiRequest('/inventory/')
+                ]);
+            } catch (err) {
+                target.innerHTML = `<tr><td colspan="6" style="color:var(--hl-red);">Failed to load sales: ${err.message}</td></tr>`;
+                return;
+            }
+
+            target.innerHTML = salesCache.map(s => {
+                const item = inventoryCache.find(i => i.id === s.item_id);
+                return `
+                <tr>
+                    <td>${new Date(s.sale_date).toLocaleString()}</td>
+                    <td><strong>${s.customer_name || 'Walk-In Consumer'}</strong>${s.customer_tin ? `<br><span style="font-size:11px; color:var(--text-muted)">TIN: ${s.customer_tin}</span>` : ''}</td>
+                    <td>${item ? item.name : '#' + s.item_id}</td>
+                    <td>${s.quantity}</td>
+                    <td class="mono-font">${Number(s.total_amount).toLocaleString()} TZS</td>
+                    <td><span style="font-size:11px; padding:2px 6px; background:#EEE; border-radius:4px;">${s.created_by}</span></td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="6" style="color:var(--text-muted); text-align:center;">No transaction lines logged.</td></tr>';
         }
 
         function syncPurchasesTable() {
@@ -945,7 +1045,7 @@
         }
 
         function openPurchaseModal() {
-            const selections = activeProfile.inventory.map(i => `<option value="${i.sku}">${i.name}</option>`).join('');
+            const selections = inventoryCache.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
             showFormModal("Record Inward Supplier Shipment Procurement", `
                 <form onsubmit="savePurchaseRecord(event)">
                     <div class="form-group"><label>Select Target Inventory Asset</label><select id="p-sku">${selections}</select></div>
@@ -958,13 +1058,13 @@
 
         function savePurchaseRecord(e) {
             e.preventDefault();
-            const sku = document.getElementById('p-sku').value;
+            const itemId = Number(document.getElementById('p-sku').value);
             const qty = Number(document.getElementById('p-qty').value);
             const supplier = document.getElementById('p-vendor').value;
 
-            const item = activeProfile.inventory.find(i => i.sku === sku);
+            const item = inventoryCache.find(i => i.id === itemId);
             if(item) {
-                item.qty = Number(item.qty) + qty;
+                // NOTE: this is still local-only (not wired to /api/purchases yet)
                 activeProfile.purchases.push({ date: new Date().toLocaleDateString(), name: item.name, qty: qty, supplier: supplier });
                 saveGlobalState();
                 closeFormModal();
@@ -1003,42 +1103,42 @@
         }
 
         function syncDebtorsTable() {
-            const debtAccounts = {};
-            activeProfile.sales.forEach(s => {
-                if(s.method === 'Deni') debtAccounts[s.customer] = (debtAccounts[s.customer] || 0) + Number(s.subtotal);
-            });
-
-            document.getElementById('debtors-table-body').innerHTML = Object.keys(debtAccounts).map(k => `
-                <tr><td><strong>${k}</strong></td><td class="mono-font text-highlight-gold">${debtAccounts[k].toLocaleString()} TZS</td><td><button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="clearDebtorAccount('${k}')">Clear Balance Payment</button></td></tr>
-            `).join('') || '<tr><td colspan="3" style="color:var(--text-muted); text-align:center;">No outstanding ledger lines open.</td></tr>';
+            // Debtors/credit-sale tracking isn't wired to the backend yet --
+            // the real Sale model has no payment-method/credit field.
+            document.getElementById('debtors-table-body').innerHTML =
+                '<tr><td colspan="3" style="color:var(--text-muted); text-align:center;">Debtor tracking not yet connected to backend.</td></tr>';
         }
 
         function clearDebtorAccount(customer) {
-            if(confirm(`Process account balance clearing settlement transaction lines for ${customer}?`)) {
-                activeProfile.sales.forEach(s => {
-                    if(s.customer === customer && s.method === 'Deni') s.method = 'Paid (Deni Settlement)';
-                });
-                saveGlobalState();
-                syncDebtorsTable();
-            }
+            alert('Debtor settlement is not yet wired to the backend.');
         }
 
-        function runProfitLossReport() {
-            let rev = 0, cogs = 0, exp = 0;
-            activeProfile.sales.forEach(s => rev += Number(s.subtotal));
-            activeProfile.inventory.forEach(i => cogs += (Number(i.cost) * Number(i.qty)));
+        async function runProfitLossReport() {
+            // Approximation from cached inventory/sales (local purchases/expenses
+            // are still mock data). Use GET /api/reports/profit-loss for the real figure.
+            try {
+                if (!salesCache.length) salesCache = await apiRequest('/sales/');
+                if (!inventoryCache.length) inventoryCache = await apiRequest('/inventory/');
+            } catch (err) {
+                console.error('Report load failed:', err);
+            }
+
+            let rev = 0, exp = 0;
+            salesCache.forEach(s => rev += Number(s.total_amount));
             activeProfile.expenses.forEach(e => exp += Number(e.amount));
 
             document.getElementById('pl-revenue').textContent = `${rev.toLocaleString()} TZS`;
-            document.getElementById('pl-cogs').textContent = `${cogs.toLocaleString()} TZS`;
+            document.getElementById('pl-cogs').textContent = `-- TZS (see /api/reports/profit-loss)`;
             document.getElementById('pl-expenses').textContent = `${exp.toLocaleString()} TZS`;
             document.getElementById('pl-net').textContent = `${(rev - exp).toLocaleString()} TZS`;
         }
 
         function saveGlobalState() {
-            const idx = sysProfiles.findIndex(p => p.id === activeProfile.id);
-            if(idx !== -1) sysProfiles[idx] = activeProfile;
-            localStorage.setItem('sys_profiles', JSON.stringify(sysProfiles));
+            // Local-only state (purchases/expenses mocks) persisted per browser tab.
+            sessionStorage.setItem('local_mock_state', JSON.stringify({
+                purchases: activeProfile.purchases,
+                expenses: activeProfile.expenses
+            }));
         }
 
         // Utility helper methods
