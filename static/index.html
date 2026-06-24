@@ -4,13 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zimbermanne Retail OS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
+    <div id="login-screen" class="login-overlay">
+        <div class="login-card">
+            <div class="login-brand">
+                <div class="brand-logo">Z</div>
+                <h2>Zimbermanne Ltd</h2>
+                <p>Enter operator credentials to access terminal</p>
+            </div>
+            
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>System Operator PIN / Username</label>
+                    <input type="text" id="login-user" placeholder="e.g., Mr. Zimbermann" required>
+                </div>
+                <div class="form-group">
+                    <label>Security Password</label>
+                    <input type="password" id="login-pass" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Authenticate Session</button>
+            </form>
+            <div id="login-error" class="login-error-msg"></div>
+        </div>
+    </div>
+
     <div class="workspace-layout">
         
-        <!-- Persistent Application Navigation Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-logo">Z</div>
@@ -54,10 +79,8 @@
             </div>
         </aside>
 
-        <!-- Main Viewport Window Container -->
         <main class="viewport-window">
             
-            <!-- Global Top Action Header Bar -->
             <header class="viewport-header">
                 <div class="header-context">
                     <h2>Point of Sale Workspace</h2>
@@ -68,16 +91,14 @@
                         <span class="indicator-dot"></span>
                         <span class="indicator-text">System Online</span>
                     </div>
-                    <button class="btn btn-secondary">Sync Ledger</button>
+                    <button class="btn btn-secondary" onclick="location.reload()">Sync Ledger</button>
                 </div>
             </header>
 
-            <!-- Active Viewport Workspace Dynamic Canvas -->
             <div class="viewport-canvas">
                 
                 <div class="pos-split-layout">
                     
-                    <!-- Left Column: Catalog Discovery & Items Array -->
                     <section class="card catalog-panel">
                         <div class="panel-header">
                             <div class="search-box-wrapper">
@@ -86,107 +107,97 @@
                             </div>
                         </div>
 
-                        <!-- Grid Array Container -->
                         <div class="catalog-grid-array">
-                            <!-- Product Card 1 -->
                             <div class="product-item-card">
                                 <div class="product-badge">Engine Parts</div>
                                 <h3 class="product-title">1UZ-FE Performance Spark Plug Kit</h3>
                                 <p class="product-sku">SKU: ENG-1UZ-SPK</p>
                                 <div class="product-footer">
-                                    <span class="product-price">185,000 TZS</span>
+                                    <span class="product-price mono-font">185,000 TZS</span>
                                     <button class="btn-icon-add">+</button>
                                 </div>
                             </div>
-                            <!-- Product Card 2 -->
                             <div class="product-item-card">
                                 <div class="product-badge">Heavy Duty</div>
                                 <h3 class="product-title">Toyota Hilux Front Brake Pad Set</h3>
                                 <p class="product-sku">SKU: BRK-HLX-004</p>
                                 <div class="product-footer">
-                                    <span class="product-price">320,000 TZS</span>
+                                    <span class="product-price mono-font">320,000 TZS</span>
                                     <button class="btn-icon-add">+</button>
                                 </div>
                             </div>
-                            <!-- Product Card 3 -->
                             <div class="product-item-card out-of-stock">
                                 <div class="product-badge">Turbos</div>
                                 <h3 class="product-title">1KD-FTV Variable Nozzle Turbocharger</h3>
                                 <p class="product-sku">SKU: TRB-1KD-VNT</p>
                                 <div class="product-footer">
-                                    <span class="product-price">1,850,000 TZS</span>
+                                    <span class="product-price mono-font">1,850,000 TZS</span>
                                     <span class="stock-status-label">Out of Stock</span>
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    <!-- Right Column: Active Checkout & Settlement Panel -->
                     <section class="card checkout-panel">
                         <div class="checkout-header">
                             <h3>Active Transaction Cart</h3>
                             <span class="items-count-badge">2 Items Selected</span>
                         </div>
 
-                        <!-- Active Cart Line Items Container -->
                         <div class="cart-items-list">
-                            <!-- Cart Item row 1 -->
                             <div class="cart-row-item">
                                 <div class="cart-item-info">
                                     <h4>1UZ-FE Performance Spark Plug Kit</h4>
                                     <p class="text-muted">185,000 TZS x 1</p>
                                 </div>
                                 <div class="cart-item-actions">
-                                    <span class="cart-item-subtotal">185,000 TZS</span>
+                                    <span class="cart-item-subtotal mono-font">185,000 TZS</span>
                                     <button class="btn-remove">&times;</button>
                                 </div>
                             </div>
-                            <!-- Cart Item row 2 -->
                             <div class="cart-row-item">
                                 <div class="cart-item-info">
                                     <h4>Toyota Hilux Front Brake Pad Set</h4>
                                     <p class="text-muted">320,000 TZS x 2</p>
                                 </div>
                                 <div class="cart-item-actions">
-                                    <span class="cart-item-subtotal">640,000 TZS</span>
+                                    <span class="cart-item-subtotal mono-font">640,000 TZS</span>
                                     <button class="btn-remove">&times;</button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Settlement Metadata Form Container -->
                         <div class="settlement-meta-form">
                             <div class="form-group">
                                 <label class="form-label">Customer Reference / Phone</label>
-                                <input type="text" class="form-control" placeholder="Optional: Enter name or phone number">
+                                <input type="text" placeholder="Optional: Enter customer reference">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Settlement Mode</label>
                                 <div class="settlement-modes-grid">
-                                    <button class="mode-selector-btn active">💵 Cash</button>
-                                    <button class="mode-selector-btn">📱 M-Pesa</button>
-                                    <button class="mode-selector-btn">💳 Bank / CRDB</button>
-                                    <button class="mode-selector-btn">🛑 Deni</button>
+                                    <button class="mode-selector-btn active" type="button" onclick="selectPaymentMode(this)">💵 Cash</button>
+                                    <button class="mode-selector-btn" type="button" onclick="selectPaymentMode(this)">📱 M-Pesa</button>
+                                    <button class="mode-selector-btn" type="button" onclick="selectPaymentMode(this)">💳 Bank / CRDB</button>
+                                    <button class="mode-selector-btn" type="button" onclick="selectPaymentMode(this)">🛑 Deni</button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Checkout Summary Breakdown Footer -->
                         <footer class="checkout-footer-meta">
                             <div class="summary-row">
                                 <span>Subtotal</span>
-                                <span>825,000 TZS</span>
+                                <span class="mono-font">825,000 TZS</span>
                             </div>
                             <div class="summary-row">
                                 <span>VAT Tax (18%)</span>
-                                <span>148,500 TZS</span>
+                                <span class="mono-font">148,500 TZS</span>
                             </div>
                             <hr class="summary-divider">
                             <div class="summary-row total-row">
                                 <span>Total Payable</span>
-                                <span class="text-accent-gold">973,500 TZS</span>
+                                <span class="text-accent-gold mono-font">973,500 TZS</span>
                             </div>
-                            <button class="btn btn-primary btn-block finish-transaction-btn">Commit & Process Transaction</button>
+                            <button type="button" class="btn btn-success btn-block finish-transaction-btn" onclick="alert('Processing transaction...')">Commit & Process Transaction</button>
                         </footer>
                     </section>
 
@@ -197,5 +208,24 @@
 
     </div>
 
+    <script>
+        function handleLogin(event) {
+            event.preventDefault();
+            const user = document.getElementById('login-user').value;
+            const errorDiv = document.getElementById('login-error');
+            
+            if (user.trim() !== "") {
+                document.getElementById('login-screen').classList.add('hide');
+            } else {
+                errorDiv.textContent = "Please enter an authorized identity profile PIN.";
+            }
+        }
+
+        function selectPaymentMode(button) {
+            const buttons = button.parentElement.querySelectorAll('.mode-selector-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+        }
+    </script>
 </body>
 </html>

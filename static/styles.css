@@ -1,23 +1,22 @@
 /* ==========================================================================
-   01. Core Architecture Configurations & Color Tokens
+   01. Core Architecture Configurations & Color Design Tokens
    ========================================================================== */
 :root {
-    /* Color Palette Archetypes */
+    /* Premium Architecture Palettes */
     --navy-core: #0F1923;
     --navy-deep: #080D12;
     --canvas-base: #F0EDE6;
     --accent-gold: #D4A843;
     --surface-card: #FFFFFF;
+    --text-primary: #1C242C;
+    --text-muted: #6F7C85;
     
-    /* Functional Semantic Highlights */
+    /* Highlight Alert States */
     --hl-green: #2ECC71;
     --hl-red: #E74C3C;
     --border-clean: #E2DED5;
     
-    /* Typography Structural Stack */
-    --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    
-    /* Global Geometric Layout Speccing */
+    /* Layout Constants Specifications */
     --sidebar-width: 280px;
     --header-height: 75px;
     --border-radius-smooth: 12px;
@@ -30,20 +29,24 @@
     padding: 0;
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-    font-family: var(--font-stack);
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
     background-color: var(--canvas-base);
-    color: var(--navy-core);
+    color: var(--text-primary);
     overflow: hidden;
     height: 100vh;
     width: 100vw;
 }
 
+.mono-font {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+}
+
 /* ==========================================================================
-   02. Rigid Structural Application Flexbox/Grid Workspace Shell
+   02. Rigid Structural Application Flexbox Workspace Shell
    ========================================================================== */
 .workspace-layout {
     display: flex;
@@ -52,7 +55,7 @@ body {
     position: relative;
 }
 
-/* Persistent Application Left Sidebar Panel */
+/* Persistent Left Application Sidebar Panel Navigation */
 .sidebar {
     width: var(--sidebar-width);
     height: 100%;
@@ -64,17 +67,17 @@ body {
     z-index: 10;
 }
 
-/* App Viewport Container Shell (Pushes Right Content Box Area Perfectly) */
+/* Main Viewport Container Area */
 .viewport-window {
     flex-grow: 1;
     height: 100%;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Encapsulates the scrolling logic into the inner views */
+    overflow: hidden; /* Restricts window scroll breaking layout grids */
     position: relative;
 }
 
-/* Top Action Header Bar Navigation Panel */
+/* Global Navigation Header Bar */
 .viewport-header {
     height: var(--header-height);
     background-color: var(--surface-card);
@@ -86,16 +89,16 @@ body {
     flex-shrink: 0;
 }
 
-/* Main Viewport Workspace Content Dynamic Canvas Wrapper */
+/* Active Viewport Canvas Context Grid Workspace Container */
 .viewport-canvas {
     flex-grow: 1;
     padding: 1.5rem;
-    overflow-y: auto; /* Activates natural nested window structural scrolling */
+    overflow-y: auto; /* Activates seamless responsive structural overflow */
     background-color: var(--canvas-base);
 }
 
 /* ==========================================================================
-   03. Interior Component Architecture Elements
+   03. Interior Brand & Menu UI Blueprint Elements
    ========================================================================== */
 .sidebar-brand {
     padding: 1.5rem;
@@ -106,12 +109,12 @@ body {
 }
 
 .brand-logo {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     background-color: var(--accent-gold);
     color: var(--navy-deep);
     font-weight: 800;
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -119,7 +122,7 @@ body {
 }
 
 .brand-text h1 {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     letter-spacing: 0.5px;
 }
@@ -175,8 +178,8 @@ body {
 }
 
 .user-avatar {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     background-color: rgba(255, 255, 255, 0.1);
     color: var(--accent-gold);
@@ -204,7 +207,6 @@ body {
     color: rgba(255, 255, 255, 0.4);
 }
 
-/* Header Extra Decor UI Utils */
 .header-context h2 {
     font-size: 1.25rem;
     font-weight: 700;
@@ -212,7 +214,7 @@ body {
 
 .text-muted {
     font-size: 0.8rem;
-    color: #7A756B;
+    color: var(--text-muted);
     margin-top: 2px;
 }
 
@@ -238,12 +240,11 @@ body {
     box-shadow: 0 0 8px var(--hl-green);
 }
 
-/* Reusable Micro Asset Cards Utility Classes */
 .card {
     background-color: var(--surface-card);
     border: 1px solid var(--border-clean);
     border-radius: var(--border-radius-smooth);
-    box-shadow: 0 4px 12px rgba(15, 25, 35, 0.02);
+    box-shadow: 0 4px 12px rgba(15, 25, 35, 0.01);
 }
 
 /* ==========================================================================
@@ -257,7 +258,6 @@ body {
     min-height: calc(100vh - var(--header-height) - 3rem);
 }
 
-/* Left Panel Input Setup */
 .catalog-panel {
     display: flex;
     flex-direction: column;
@@ -279,28 +279,29 @@ body {
     top: 50%;
     transform: translateY(-50%);
     pointer-events: none;
-    opacity: 0.6;
+    opacity: 0.5;
 }
 
-.search-input {
+.search-input, .form-group input {
     width: 100%;
     padding: 0.85rem 1rem 0.85rem 2.5rem;
     border: 1px solid var(--border-clean);
     background-color: #FBFBFA;
     border-radius: 8px;
     font-size: 0.9rem;
-    font-family: var(--font-stack);
     outline: none;
     transition: var(--transition-snappy);
 }
 
-.search-input:focus {
-    border-color: var(--navy-core);
-    background-color: #FFFFFF;
-    box-shadow: 0 0 0 3px rgba(15, 25, 35, 0.04);
+.form-group input {
+    padding: 0.85rem 1rem;
 }
 
-/* Highly Responsive Custom Catalog Items Matrix */
+.search-input:focus, .form-group input:focus {
+    border-color: var(--navy-core);
+    background-color: #FFFFFF;
+}
+
 .catalog-grid-array {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -319,8 +320,8 @@ body {
 
 .product-item-card:hover {
     border-color: var(--accent-gold);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(15, 25, 35, 0.04);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(15, 25, 35, 0.03);
 }
 
 .product-badge {
@@ -341,12 +342,12 @@ body {
     font-weight: 600;
     line-height: 1.4;
     margin-bottom: 0.25rem;
-    flex-grow: 1;
+    color: var(--navy-core);
 }
 
 .product-sku {
     font-size: 0.75rem;
-    color: #9A958B;
+    color: var(--text-muted);
     margin-bottom: 1rem;
 }
 
@@ -360,12 +361,11 @@ body {
 .product-price {
     font-weight: 700;
     font-size: 0.95rem;
-    color: var(--navy-core);
 }
 
 .btn-icon-add {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 6px;
     border: none;
     background-color: var(--navy-core);
@@ -383,16 +383,9 @@ body {
     color: var(--navy-deep);
 }
 
-/* System Exception Structural Out of Stock Handlers */
 .product-item-card.out-of-stock {
-    opacity: 0.6;
+    opacity: 0.5;
     background-color: #FBFBFA;
-}
-
-.product-item-card.out-of-stock:hover {
-    border-color: var(--border-clean);
-    transform: none;
-    box-shadow: none;
 }
 
 .stock-status-label {
@@ -408,8 +401,6 @@ body {
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    position: sticky;
-    top: 1.5rem;
 }
 
 .checkout-header {
@@ -421,15 +412,10 @@ body {
     margin-bottom: 1rem;
 }
 
-.checkout-header h3 {
-    font-size: 1.05rem;
-    font-weight: 700;
-}
-
 .items-count-badge {
     font-size: 0.75rem;
     font-weight: 600;
-    background-color: rgba(212, 168, 67, 0.15);
+    background-color: rgba(212, 168, 67, 0.12);
     color: #946C13;
     padding: 0.25rem 0.6rem;
     border-radius: 20px;
@@ -439,9 +425,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    max-height: 240px;
+    max-height: 200px;
     overflow-y: auto;
-    padding-right: 0.25rem;
     margin-bottom: 1.5rem;
 }
 
@@ -458,7 +443,6 @@ body {
 .cart-item-info h4 {
     font-size: 0.85rem;
     font-weight: 600;
-    margin-bottom: 0.15rem;
 }
 
 .cart-item-actions {
@@ -475,18 +459,15 @@ body {
 .btn-remove {
     background: none;
     border: none;
-    color: #9A958B;
+    color: var(--text-muted);
     font-size: 1.25rem;
     cursor: pointer;
-    padding: 0 0.25rem;
-    line-height: 1;
 }
 
 .btn-remove:hover {
     color: var(--hl-red);
 }
 
-/* Settlement Mode Selector Components Framework */
 .settlement-meta-form {
     border-top: 1px solid var(--border-clean);
     padding-top: 1.25rem;
@@ -497,28 +478,14 @@ body {
     margin-bottom: 1rem;
 }
 
-.form-label {
+.form-group label {
     display: block;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #5A554B;
     margin-bottom: 0.5rem;
-}
-
-.form-control {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-clean);
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-family: var(--font-stack);
-    outline: none;
-}
-
-.form-control:focus {
-    border-color: var(--navy-core);
+    color: var(--navy-core);
 }
 
 .settlement-modes-grid {
@@ -532,18 +499,15 @@ body {
     background-color: #FFFFFF;
     border: 1px solid var(--border-clean);
     border-radius: 6px;
-    font-family: var(--font-stack);
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--navy-core);
     cursor: pointer;
-    text-align: center;
     transition: var(--transition-snappy);
 }
 
 .mode-selector-btn:hover {
     border-color: var(--navy-core);
-    background-color: #FBFBFA;
 }
 
 .mode-selector-btn.active {
@@ -552,7 +516,6 @@ body {
     color: #FFFFFF;
 }
 
-/* System Totals Calculations Footer Breakdown */
 .checkout-footer-meta {
     background-color: #FBFBFA;
     border: 1px solid var(--border-clean);
@@ -566,7 +529,6 @@ body {
     align-items: center;
     justify-content: space-between;
     font-size: 0.85rem;
-    color: #5A554B;
     margin-bottom: 0.5rem;
 }
 
@@ -579,7 +541,6 @@ body {
 .total-row {
     font-size: 1.15rem;
     font-weight: 800;
-    color: var(--navy-core);
     margin-bottom: 1.25rem;
 }
 
@@ -588,74 +549,78 @@ body {
 }
 
 /* ==========================================================================
-   06. Generic Element Controls & Button Utilities
+   06. Generic Component Action Buttons Utility Classes
    ========================================================================== */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0.65rem 1.25rem;
-    font-family: var(--font-stack);
     font-size: 0.85rem;
     font-weight: 600;
     border-radius: 6px;
     border: 1px solid transparent;
     cursor: pointer;
     transition: var(--transition-snappy);
-    text-decoration: none;
 }
 
-.btn-primary {
-    background-color: #2ECC71;
-    color: #FFFFFF;
-}
+.btn-primary { background-color: var(--navy-core); color: #FFFFFF; }
+.btn-success { background-color: var(--hl-green); color: #FFFFFF; }
+.btn-secondary { background-color: #FFFFFF; border-color: var(--border-clean); color: var(--navy-core); }
 
-.btn-primary:hover {
-    background-color: #27AE60;
-    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2);
-}
-
-.btn-secondary {
-    background-color: #FFFFFF;
-    border-color: var(--border-clean);
-    color: var(--navy-core);
-}
-
-.btn-secondary:hover {
-    background-color: #FBFBFA;
-    border-color: var(--navy-core);
-}
-
-.btn-block {
-    display: flex;
-    width: 100%;
-}
-
-.finish-transaction-btn {
-    padding: 1rem;
-    font-size: 0.95rem;
-}
+.btn-block { display: flex; width: 100%; }
+.finish-transaction-btn { padding: 1rem; font-size: 0.95rem; }
 
 /* ==========================================================================
-   07. Global Responsive Media Breakpoints Layout Settings
+   07. Authentication Security Overlay Subsystem Architecture
    ========================================================================== */
-@media (max-width: 1200px) {
-    .pos-split-layout {
-        grid-template-columns: 1fr;
-    }
-    .checkout-panel {
-        position: static;
-    }
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 25, 35, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
+.login-overlay.hide {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(1.02);
+}
+
+.login-card {
+    background-color: var(--surface-card);
+    border: 1px solid var(--border-clean);
+    border-radius: var(--border-radius-smooth);
+    width: 100%;
+    max-width: 400px;
+    padding: 2.5rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+.login-brand {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-brand .brand-logo { margin: 0 auto 1rem; }
+.login-brand h2 { font-size: 1.35rem; font-weight: 700; color: var(--navy-core); }
+.login-brand p { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+.login-error-msg { color: var(--hl-red); font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 1rem; }
+
+/* ==========================================================================
+   08. Global Responsive Media Breakpoints Layout Settings
+   ========================================================================== */
+@media (max-width: 1200px) {
+    .pos-split-layout { grid-template-columns: 1fr; }
+}
 @media (max-width: 768px) {
-    .sidebar {
-        display: none; /* Can be hooked with JavaScript toggle handling mechanisms */
-    }
-    .viewport-header {
-        padding: 0 1rem;
-    }
-    .catalog-grid-array {
-        grid-template-columns: 1fr;
-    }
+    .sidebar { display: none; }
 }
