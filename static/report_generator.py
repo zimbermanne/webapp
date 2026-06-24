@@ -1,5 +1,4 @@
-import os
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from models import InventoryItem, Sale, Expense
@@ -7,14 +6,14 @@ from models import InventoryItem, Sale, Expense
 class ReportGenerator:
     def __init__(self, db: Session):
         """
-        Initialize the ReportGenerator with a live SQLAlchemy session database context
-        instead of a mock file-system inventory manager.
+        Initialize ReportGenerator exclusively via SQLAlchemy database contexts,
+        eliminating local system file dependencies entirely.
         """
         self.db = db
 
     def generate_low_stock_report(self) -> dict:
         """
-        Queries the database to find items matching or below their reorder safety points.
+        Queries and transforms low stock rows using dot-notation ORM access safely.
         """
         low_stock_items = self.db.query(InventoryItem).filter(
             InventoryItem.quantity <= InventoryItem.reorder_point
@@ -31,17 +30,15 @@ class ReportGenerator:
 
     def generate_sales_report(self, start_date: datetime = None, end_date: datetime = None) -> dict:
         """
-        Aggregates transaction histories cleanly off relational database rows.
+        Aggregates financial sales pipelines directly using memory-bounded relational filters.
         """
         query = self.db.query(Sale)
-        
         if start_date:
             query = query.filter(Sale.timestamp >= start_date)
         if end_date:
             query = query.filter(Sale.timestamp <= end_date)
             
         sales_records = query.all()
-        
         total_sales_value = sum(sale.total_amount for sale in sales_records)
         total_items_sold = sum(sale.quantity for sale in sales_records)
         
@@ -62,21 +59,17 @@ class ReportGenerator:
 
     def generate_expenditure_report(self, start_date: datetime = None, end_date: datetime = None) -> dict:
         """
-        Aggregates operational expenses dynamically using SQL group-by mechanics.
+        Aggregates operational expenses using exact SQL GROUP BY calculations.
         """
         query = self.db.query(Expense)
-        
         if start_date:
             query = query.filter(Expense.expense_date >= start_date)
         if end_date:
             query = query.filter(Expense.expense_date <= end_date)
             
         expenses_records = query.all()
-        
-        # Calculate total operational cost
         total_expenses = sum(exp.amount for exp in expenses_records)
         
-        # Aggregate categories dynamically using database dictionary operations
         category_group_query = self.db.query(
             Expense.category, func.sum(Expense.amount)
         ).group_by(Expense.category)
@@ -104,18 +97,17 @@ class ReportGenerator:
 
     def generate_full_audit_report(self) -> dict:
         """
-        Compiles structural snapshot summaries of current stock volumes and rolling operations.
+        Compiles structural performance metrics synchronized with uniform UTC time calculations.
         """
-        # Fetch current system inventory volumes
         all_inventory = self.db.query(InventoryItem).all()
         total_sku_count = len(all_inventory)
         total_stock_units = sum(item.quantity for item in all_inventory)
         
-        # Capture current day boundary context
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        # Timezone validation compliance fix
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         
         return {
-            "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
             "inventory_summary": {
                 "total_unique_items": total_sku_count,
                 "total_stock_units": total_stock_units
