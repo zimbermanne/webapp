@@ -13,23 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import engine, Base, get_db
 from report_generator import ReportGenerator
 from routers import auth, inventory, sales, purchases, expenses, reports, users, activity, backup, agent
-from pydantic import BaseModel
 
-class UserProfileCreate(BaseModel):
-    username: str
-    name: str
-    role: str
-
-@app.post("/api/users/profile")
-async def create_user_profile(payload: UserProfileCreate, db: Session = Depends(get_db)):
-    # This acts as an explicit hook for creation logic. 
-    # Replace with database model insertion or delegation to your `users` router as required.
-    return {
-        "status": "Success", 
-        "message": f"Profile for {payload.username} registered successfully.",
-        "profile": payload.dict()
-    }
-    
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
