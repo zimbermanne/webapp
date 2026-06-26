@@ -294,7 +294,7 @@ select.form-control{cursor:pointer;}
     <div class="sidebar-brand">
       <div class="brand-logo">Z</div>
       <div class="brand-text">
-        <h1>Zimbermanne Ltd</h1>
+        <h1>Bussines assistant</h1>
         <span>Retail Engine v2.0</span>
       </div>
     </div>
@@ -312,7 +312,7 @@ select.form-control{cursor:pointer;}
       <div class="user-profile">
         <div class="user-avatar" id="user-avatar-txt">MZ</div>
         <div>
-          <div class="user-name" id="user-display-name">Mr. Zimbermann</div>
+          <div class="user-name" id="user-display-name">Admin_user</div>
           <div class="user-role" id="user-role-label">Administrator</div>
         </div>
       </div>
@@ -842,7 +842,7 @@ function renderCart(){
     <div class="form-group">
       <label class="form-label">Payment Method</label>
       <div class="payment-modes">
-        ${['💵 Cash','📱 M-Pesa','💳 CRDB / Bank','🛑 Credit'].map(m=>`
+        ${['💵 Cash','📱 M-Pesa','💳 Bank','🛑 Credit'].map(m=>`
           <button class="pay-mode-btn${paymentMode===m?' active':''}" onclick="paymentMode='${m}';renderCart()">${m}</button>
         `).join('')}
       </div>
@@ -899,6 +899,7 @@ function showReceipt(sale){
       <div style="font-size:0.75rem;color:var(--text-muted);">TIN: ${DB.settings.tin}</div>
       <div style="font-size:0.75rem;color:var(--text-muted);">${DB.settings.phone}</div>
       <hr style="margin:0.75rem 0;border-color:var(--border-clean);">
+      <div style="text-align:right;margin-bottom:1rem;">
       <div style="font-size:0.78rem;">Receipt #${sale.id.slice(-8).toUpperCase()}</div>
       <div style="font-size:0.75rem;color:var(--text-muted);">${dateStr(sale.date)} ${timeStr(sale.date)}</div>
       <div style="font-size:0.75rem;">Customer: ${sale.customer}</div>
@@ -919,8 +920,6 @@ function showReceipt(sale){
     </table>
     <hr style="margin:0.75rem 0;border-style:dashed;border-color:var(--border-clean);">
     <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:0.25rem;"><span>Subtotal</span><span>${fmt(sale.subtotal)}</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:0.5rem;"><span>VAT (${DB.settings.vat_rate}%)</span><span>${fmt(sale.vat)}</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:0.95rem;font-weight:800;"><span>TOTAL</span><span>${fmt(sale.total)}</span></div>
     <div style="text-align:center;margin-top:1rem;font-size:0.75rem;color:var(--text-muted);">Payment: ${sale.paymentMode}</div>
     <div style="text-align:center;margin-top:0.5rem;font-size:0.72rem;color:var(--text-muted);">Thank you for your business!</div>
   `;
