@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from database import get_db
 from models import User, Sale, Purchase, Expense, InventoryItem, Debtor, Creditor
-from schemas import FinancialSummary
+from schemas import FinancialSummary, TransactionProfitLoss, TransactionProfitLossReport
 from auth import get_current_active_user
 from activity import log_activity
 
@@ -47,17 +47,34 @@ async def get_financial_summary(
         query_purchases = query_purchases.filter(Purchase.purchase_date <= end_date)
         query_expenses = query_expenses.filter(Expense.expense_date <= end_date)
     
-    total_sales = sum(sale.total_amount for sale in query_sales.all())
+    sales = query_sales.all()
+    total_sales = sum(sale.total_amount for sale in sales)
     total_purchases = sum(purchase.total_cost for purchase in query_purchases.all())
     total_expenses = sum(expense.amount for expense in query_expenses.all())
     
-    # Calculate profit/loss
-    profit_loss = total_sales - total_purchases - total_expenses
+    # Improved profit/loss calculation using actual cost of goods sold
+    total_cost_of_goods_sold = 0.0
+    for sale in sales:
+        buying_price = sale.buying_price
+        if buying_price:
+            total_cost_of_goods_sold += buying_price * sale.quantity
+        else:
+            # Fallback to inventory buying price if sale doesn't have it
+            item = db.query(InventoryItem).filter(InventoryItem.id == sale.item_id).first()
+            if item and item.buying_price:
+                total_cost_of_goods_sold += item.buying_price * sale.quantity
+            else:
+                # Last resort: use unit price as cost
+                total_cost_of_goods_sold += sale.unit_price * sale.quantity
+    
+    # Calculate profit/loss: Revenue - Cost of Goods Sold - Operating Expenses
+    profit_loss = total_sales - total_cost_of_goods_sold - total_expenses
     
     return FinancialSummary(
         total_sales=total_sales,
         total_purchases=total_purchases,
         total_expenses=total_expenses,
+        cost_of_goods_sold=total_cost_of_goods_sold,
         profit_loss=profit_loss,
         period_start=start_date or datetime.utcnow(),
         period_end=end_date or datetime.utcnow()
@@ -110,9 +127,29 @@ async def get_profit_loss_report(
         expenses_by_category[expense.category] = expenses_by_category.get(expense.category, 0) + expense.amount
     
     total_revenue = sum(sale.total_amount for sale in sales)
-    total_cost_of_goods = sum(purchase.total_cost for purchase in purchases)
     total_operating_expenses = sum(expense.amount for expense in expenses)
+
     
+    # Calculate actual cost of goods sold using buying prices
+    total_cost_of_goods = 0.0
+    for sale in sales:
+        buying_price = sale.buying_price
+        if buying_price:
+            total_cost_of_goods += buying_price * sale.quantity
+        else:
+            # Fallback to inventory buying price
+            item = db.query(InventoryItem).filter(InventoryItem.id == sale.item_id).first()
+            if item and item.buying_price:
+                total_cost_of_goods += item.buying_price * sale.quantity
+            else:
+                # Last resort: use unit price
+                total_cost_of_goods += sale.unit_price * sale.quantity
+    
+
+
+
+    
+
     gross_profit = total_revenue - total_cost_of_goods
     net_profit = gross_profit - total_operating_expenses
     
@@ -310,3 +347,176 @@ async def add_creditor(
     )
     
     return {"message": "Creditor added successfully", "creditor_id": new_creditor.id}
+
+
+@router.get("/transaction-profit-loss", response_model=TransactionProfitLossReport)
+async def get_transaction_profit_loss(
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    item_id: Optional[int] = None,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get detailed transaction-level profit and loss analysis"""
+    # Default to current month if no dates specified
+    if not start_date and not end_date:
+        now = datetime.utcnow()
+        start_date = datetime(now.year, now.month, 1)
+        end_date = now
+    
+    # Build sales query
+    sales_query = db.query(Sale)
+    if start_date:
+        sales_query = sales_query.filter(Sale.sale_date >= start_date)
+    if end_date:
+        sales_query = sales_query.filter(Sale.sale_date <= end_date)
+    if item_id:
+        sales_query = sales_query.filter(Sale.item_id == item_id)
+    
+    sales = sales_query.all()
+    
+    # Build purchases query
+    purchases_query = db.query(Purchase)
+    if start_date:
+        purchases_query = purchases_query.filter(Purchase.purchase_date >= start_date)
+    if end_date:
+        purchases_query = purchases_query.filter(Purchase.purchase_date <= end_date)
+    if item_id:
+        purchases_query = purchases_query.filter(Purchase.item_id == item_id)
+    
+    purchases = purchases_query.all()
+    
+    # Calculate transaction-level profit/loss
+    transactions = []
+    total_profit = 0.0
+    total_loss = 0.0
+    
+    # Process sales transactions
+    for sale in sales:
+        item = db.query(InventoryItem).filter(InventoryItem.id == sale.item_id).first()
+        item_name = item.name if item else "Unknown Item"
+        
+        buying_price = sale.buying_price or (item.buying_price if item else sale.unit_price)
+        selling_price = sale.unit_price
+        profit_loss = (selling_price - buying_price) * sale.quantity
+        
+        if profit_loss >= 0:
+            total_profit += profit_loss
+        else:
+            total_loss += abs(profit_loss)
+        
+        transactions.append(TransactionProfitLoss(
+            transaction_id=sale.id,
+            transaction_type="sale",
+            item_name=item_name,
+            quantity=sale.quantity,
+            buying_price=buying_price,
+            selling_price=selling_price,
+            profit_loss=profit_loss,
+            transaction_date=sale.sale_date,
+            customer_name=sale.customer_name,
+            supplier_name=None
+        ))
+    
+    # Process purchase transactions (these are cost, not profit/loss directly)
+    for purchase in purchases:
+        item = db.query(InventoryItem).filter(InventoryItem.id == purchase.item_id).first()
+        item_name = item.name if item else "Unknown Item"
+        
+        # Purchases don't directly contribute to profit/loss but we track them
+        # The profit is realized when the purchased items are sold
+        buying_price = purchase.unit_cost
+        selling_price = item.price if item else purchase.unit_cost
+        profit_loss = 0  # Purchases don't realize profit until sold
+        
+        transactions.append(TransactionProfitLoss(
+            transaction_id=purchase.id,
+            transaction_type="purchase",
+            item_name=item_name,
+            quantity=purchase.quantity,
+            buying_price=buying_price,
+            selling_price=selling_price,
+            profit_loss=profit_loss,
+            transaction_date=purchase.purchase_date,
+            customer_name=None,
+            supplier_name=purchase.supplier_name
+        ))
+    
+    # Sort by date descending
+    transactions.sort(key=lambda x: x.transaction_date, reverse=True)
+    
+    net_profit = total_profit - total_loss
+    
+    return TransactionProfitLossReport(
+        period_start=start_date,
+        period_end=end_date,
+        total_transactions=len(transactions),
+        total_profit=total_profit,
+        total_loss=total_loss,
+        net_profit=net_profit,
+        transactions=transactions
+    )
+
+
+@router.get("/profit-loss-by-item")
+async def get_profit_loss_by_item(
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get profit/loss analysis grouped by item"""
+    if not start_date and not end_date:
+        now = datetime.utcnow()
+        start_date = datetime(now.year, now.month, 1)
+        end_date = now
+    
+    # Get all sales in period
+    sales_query = db.query(Sale)
+    if start_date:
+        sales_query = sales_query.filter(Sale.sale_date >= start_date)
+    if end_date:
+        sales_query = sales_query.filter(Sale.sale_date <= end_date)
+    
+    sales = sales_query.all()
+    
+    # Group by item
+    item_profit_loss = {}
+    
+    for sale in sales:
+        item = db.query(InventoryItem).filter(InventoryItem.id == sale.item_id).first()
+        if not item:
+            continue
+            
+        item_name = item.name
+        buying_price = sale.buying_price or (item.buying_price or sale.unit_price)
+        selling_price = sale.unit_price
+        profit_loss = (selling_price - buying_price) * sale.quantity
+        
+        if item_name not in item_profit_loss:
+            item_profit_loss[item_name] = {
+                "item_id": item.id,
+                "item_name": item_name,
+                "quantity_sold": 0,
+                "total_revenue": 0.0,
+                "total_cost": 0.0,
+                "total_profit": 0.0,
+                "profit_margin": 0.0
+            }
+        
+        item_profit_loss[item_name]["quantity_sold"] += sale.quantity
+        item_profit_loss[item_name]["total_revenue"] += sale.total_amount
+        item_profit_loss[item_name]["total_cost"] += buying_price * sale.quantity
+        item_profit_loss[item_name]["total_profit"] += profit_loss
+    
+    # Calculate profit margins
+    for item_data in item_profit_loss.values():
+        if item_data["total_revenue"] > 0:
+            item_data["profit_margin"] = (item_data["total_profit"] / item_data["total_revenue"]) * 100
+    
+    return {
+        "period_start": start_date,
+        "period_end": end_date,
+        "items": list(item_profit_loss.values()),
+        "total_items": len(item_profit_loss)
+    }

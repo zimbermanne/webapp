@@ -42,6 +42,7 @@ async def create_sale(
         item_id=sale.item_id,
         quantity=sale.quantity,
         unit_price=sale.unit_price,
+        buying_price=item.buying_price or sale.unit_price,  # Use inventory buying price or fallback to unit price
         total_amount=total_amount,
         customer_name=sale.customer_name,
         customer_address=sale.customer_address,

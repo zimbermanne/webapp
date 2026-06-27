@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS inventory (
     name           VARCHAR(200) NOT NULL,
     quantity       INTEGER      NOT NULL DEFAULT 0,
     price          FLOAT        NOT NULL,
+    buying_price   FLOAT,
     category       VARCHAR(100),
     reorder_point  INTEGER      NOT NULL DEFAULT 10,
     created_at     TIMESTAMP    NOT NULL DEFAULT NOW(),
@@ -55,6 +56,7 @@ CREATE TABLE IF NOT EXISTS sales (
     item_id           INTEGER      NOT NULL REFERENCES inventory(id),
     quantity          INTEGER      NOT NULL,
     unit_price        FLOAT        NOT NULL,
+    buying_price      FLOAT,
     total_amount      FLOAT        NOT NULL,
     customer_name     VARCHAR(200),
     customer_address  TEXT,
@@ -117,6 +119,8 @@ CREATE INDEX IF NOT EXISTS ix_activity_logs_timestamp ON activity_logs (timestam
 CREATE TABLE IF NOT EXISTS debtors (
     id          SERIAL PRIMARY KEY,
     name        VARCHAR(100) NOT NULL,
+    company     VARCHAR(200),
+    invoice_no  VARCHAR(100),
     amount      FLOAT        NOT NULL,
     contact     VARCHAR(20),
     date_owed   TIMESTAMP    NOT NULL DEFAULT NOW(),
@@ -130,6 +134,7 @@ CREATE TABLE IF NOT EXISTS debtors (
 CREATE TABLE IF NOT EXISTS creditors (
     id          SERIAL PRIMARY KEY,
     name        VARCHAR(100) NOT NULL,
+    invoice_no  VARCHAR(100),
     amount      FLOAT        NOT NULL,
     contact     VARCHAR(20),
     date_owed   TIMESTAMP    NOT NULL DEFAULT NOW(),

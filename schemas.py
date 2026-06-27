@@ -54,6 +54,7 @@ class InventoryItemBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     quantity: int = Field(..., ge=0)
     price: float = Field(..., gt=0)
+    buying_price: Optional[float] = Field(None, ge=0)
     category: Optional[str] = None
     reorder_point: int = Field(default=10, ge=0)
 
@@ -66,6 +67,7 @@ class InventoryItemUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     quantity: Optional[int] = Field(None, ge=0)
     price: Optional[float] = Field(None, gt=0)
+    buying_price: Optional[float] = Field(None, ge=0)
     category: Optional[str] = None
     reorder_point: Optional[int] = Field(None, ge=0)
 
@@ -84,6 +86,7 @@ class SaleBase(BaseModel):
     item_id: int
     quantity: int = Field(..., gt=0)
     unit_price: float = Field(..., gt=0)
+    buying_price: Optional[float] = Field(None, ge=0)
     customer_name: Optional[str] = None
     customer_address: Optional[str] = None
     customer_tin: Optional[str] = Field(None, max_length=50)
@@ -151,6 +154,7 @@ class FinancialSummary(BaseModel):
     total_sales: float
     total_purchases: float
     total_expenses: float
+    cost_of_goods_sold: float = 0.0
     profit_loss: float
     period_start: datetime
     period_end: datetime
@@ -188,3 +192,94 @@ class BackupInfo(BaseModel):
     created_at: datetime
     size: int
     files_included: List[str]
+
+
+# Transaction Profit/Loss schemas
+class TransactionProfitLoss(BaseModel):
+    transaction_id: int
+    transaction_type: str  # "sale" or "purchase"
+    item_name: str
+    quantity: int
+    buying_price: float
+    selling_price: float
+    profit_loss: float
+    transaction_date: datetime
+    customer_name: Optional[str] = None
+    supplier_name: Optional[str] = None
+
+
+class TransactionProfitLossReport(BaseModel):
+    period_start: Optional[datetime] = None
+    period_end: Optional[datetime] = None
+    total_transactions: int
+    total_profit: float
+    total_loss: float
+    net_profit: float
+    transactions: List[TransactionProfitLoss]
+
+
+# Quotation and Invoice schemas
+class QuotationItem(BaseModel):
+    item_name: str
+    quantity: int
+    unit_price: float
+    total: float
+
+
+class QuotationCreate(BaseModel):
+    customer_name: str
+    customer_address: Optional[str] = None
+    customer_email: Optional[str] = None
+    customer_phone: Optional[str] = None
+    valid_until: datetime
+    items: List[QuotationItem]
+    notes: Optional[str] = None
+
+
+class Quotation(BaseModel):
+    id: int
+    quotation_number: str
+    customer_name: str
+    customer_address: Optional[str]
+    customer_email: Optional[str]
+    customer_phone: Optional[str]
+    valid_until: datetime
+    items: List[QuotationItem]
+    subtotal: float
+    tax_rate: float
+    tax_amount: float
+    total: float
+    notes: Optional[str]
+    created_at: datetime
+    status: str  # "draft", "sent", "accepted", "rejected", "expired"
+
+
+class InvoiceCreate(BaseModel):
+    customer_name: str
+    customer_address: Optional[str] = None
+    customer_email: Optional[str] = None
+    customer_phone: Optional[str] = None
+    customer_tin: Optional[str] = None
+    due_date: datetime
+    items: List[QuotationItem]
+    notes: Optional[str] = None
+
+
+class Invoice(BaseModel):
+    id: int
+    invoice_number: str
+    customer_name: str
+    customer_address: Optional[str]
+    customer_email: Optional[str]
+    customer_phone: Optional[str]
+    customer_tin: Optional[str]
+    invoice_date: datetime
+    due_date: datetime
+    items: List[QuotationItem]
+    subtotal: float
+    tax_rate: float
+    tax_amount: float
+    total: float
+    notes: Optional[str]
+    status: str  # "draft", "sent", "paid", "overdue", "cancelled"
+    created_at: datetime

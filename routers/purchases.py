@@ -43,7 +43,7 @@ async def create_purchase(
     
     # Update inventory quantity and price
     item.quantity += purchase.quantity
-    item.price = purchase.unit_cost  # Update to latest purchase price
+    item.buying_price = purchase.unit_cost  # Update buying price, not selling price
     item.updated_at = datetime.utcnow()
     
     db.add(new_purchase)

@@ -28,6 +28,7 @@ class InventoryItem(Base):
     name = Column(String(200), nullable=False, index=True)
     quantity = Column(Integer, default=0)
     price = Column(Float, nullable=False)
+    buying_price = Column(Float, nullable=True)
     category = Column(String(100), nullable=True)
     reorder_point = Column(Integer, default=10)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -45,6 +46,7 @@ class Sale(Base):
     item_id = Column(Integer, ForeignKey("inventory.id"), nullable=False)
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Float, nullable=False)
+    buying_price = Column(Float, nullable=True)  # Cost price at time of sale
     total_amount = Column(Float, nullable=False)
     customer_name = Column(String(200), nullable=True)
     customer_address = Column(Text, nullable=True)
@@ -104,6 +106,7 @@ class Debtor(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     company = Column(String(200), nullable=True)
+    invoice_no = Column(String(100), nullable=True)
     amount = Column(Float, nullable=False)
     contact = Column(String(20), nullable=True)
     date_owed = Column(DateTime, default=datetime.utcnow)

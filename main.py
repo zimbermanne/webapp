@@ -206,6 +206,7 @@ async def process_checkout(
             item_id=inventory_item.id,
             quantity=qty,
             unit_price=unit_price,
+            buying_price=inventory_item.buying_price or unit_price,  # Use inventory buying price or fallback to unit price
             total_amount=line_total,
             customer_name=customer_name,
             sale_date=datetime.utcnow(),

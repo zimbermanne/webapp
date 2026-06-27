@@ -41,7 +41,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--canvas-base);
 /* ========================================================================
    LOGIN OVERLAY
    ======================================================================== */
-.login-overlay{position:fixed;inset:0;background:rgba(8,13,18,0.88);backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease;}
+.login-overlay{position:fixed;inset:0;background:rgba(180, 183, 187, 0.88);backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease;}
 .login-overlay.hide{opacity:0;pointer-events:none;}
 .login-card{background:var(--surface-card);border:1px solid var(--border-clean);border-radius:14px;width:100%;max-width:400px;padding:2.5rem;box-shadow:0 24px 48px rgba(0,0,0,0.35);}
 .login-brand{text-align:center;margin-bottom:2rem;}
@@ -89,6 +89,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--canvas-base);
 .header-right{display:flex;align-items:center;gap:1.25rem;}
 .status-dot{width:8px;height:8px;background:var(--hl-green);border-radius:50%;box-shadow:0 0 8px var(--hl-green);}
 .status-label{display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;font-weight:500;}
+.live-clock{display:flex;align-items:center;gap:0.5rem;font-size:0.74rem;font-weight:500;color:var(--text-secondary,#9aa5ab);font-family:'JetBrains Mono',monospace;letter-spacing:0.02em;white-space:nowrap;}
+.live-clock .lc-time{color:var(--hl-green);font-weight:700;}
 .vp-canvas{flex-grow:1;padding:1.25rem;overflow-y:auto;background:var(--canvas-base);}
 
 /* ========================================================================
@@ -170,7 +172,7 @@ select.form-control{cursor:pointer;}
 /* ========================================================================
    DASHBOARD
    ======================================================================== */
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.25rem;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:1.25rem;}
 .kpi-card{padding:1.25rem;display:flex;flex-direction:column;gap:0.25rem;}
 .kpi-label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);}
 .kpi-value{font-size:1.7rem;font-weight:800;line-height:1.1;font-family:'JetBrains Mono',monospace;}
@@ -307,6 +309,7 @@ select.form-control{cursor:pointer;}
       <div class="menu-item" data-view="creditors"><span class="menu-icon">💳</span>Creditors Ledger</div>
       <div class="menu-item" data-view="clients"><span class="menu-icon">🏢</span>Clients / Debtors</div>
       <div class="menu-item" data-view="sales-history"><span class="menu-icon">📈</span>Sales History</div>
+      <div class="menu-item" data-view="reports"><span class="menu-icon">📑</span>Reports &amp; P/L</div>
       <div class="menu-item" data-view="settings"><span class="menu-icon">⚙️</span>System Settings</div>
     </nav>
     <div class="sidebar-footer">
@@ -329,6 +332,7 @@ select.form-control{cursor:pointer;}
       </div>
       <div class="header-right">
         <div class="status-label"><div class="status-dot"></div>System Online</div>
+        <div class="live-clock" id="live-clock"></div>
         <button class="btn btn-secondary btn-sm" onclick="logOut()">Log Out</button>
       </div>
     </header>
@@ -381,9 +385,31 @@ select.form-control{cursor:pointer;}
    ======================================================================== */
 const DB_KEY = 'zmbr_os_v2';
 let DB = {};
+let _memoryFallback = null;       // used when localStorage is unavailable (e.g. file:// origin restrictions)
+let _storageBlocked = false;
+
+function safeStorageGet(){
+  try{
+    return localStorage.getItem(DB_KEY);
+  }catch(e){
+    _storageBlocked = true;
+    return _memoryFallback;
+  }
+}
+
+function safeStorageSet(value){
+  try{
+    localStorage.setItem(DB_KEY, value);
+    return true;
+  }catch(e){
+    _storageBlocked = true;
+    _memoryFallback = value; // keep data alive for the rest of this session
+    return false;
+  }
+}
 
 function loadDB(){
-  try{ DB = JSON.parse(localStorage.getItem(DB_KEY)) || {}; }catch(e){ DB = {}; }
+  try{ DB = JSON.parse(safeStorageGet()) || {}; }catch(e){ DB = {}; }
   // seed defaults
   if(!DB.products) DB.products = defaultProducts();
   if(!DB.purchases) DB.purchases = [];
@@ -419,7 +445,7 @@ function loadDB(){
   saveDB();
 }
 
-function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
+function saveDB(){ safeStorageSet(JSON.stringify(DB)); }
 
 function defaultProducts(){
   return [
@@ -565,6 +591,7 @@ const views = {
   creditors:{ title:'Creditors Ledger', sub:'Supplier accounts & outstanding payables' },
   clients:{ title:'Clients / Debtors', sub:'Customer accounts & outstanding receivables' },
   'sales-history':{ title:'Sales History', sub:'Complete transaction log & audit trail' },
+  reports:{ title:'Reports & Profit/Loss', sub:'Profit & loss per transaction and consolidated business reports' },
   settings:{ title:'System Settings', sub:'Configuration & business profile' },
 };
 
@@ -633,7 +660,7 @@ function cartAddProduct(productId){
     if(existing.qty >= p.stock){ toast('Max stock reached','error'); return; }
     existing.qty++;
   } else {
-    cart.push({id:p.id,name:p.name,price:p.price,qty:1,sku:p.sku});
+    cart.push({id:p.id,name:p.name,price:p.price,cost:p.cost||0,qty:1,sku:p.sku});
   }
   renderCart();
 }
@@ -659,6 +686,96 @@ function cartTotals(){
 }
 
 /* ========================================================================
+   PROFIT & LOSS / REPORTING ENGINE
+   ======================================================================== */
+
+/**
+ * Calculate profit/loss for a single sale-item line.
+ * Profit/Loss = Selling Price (per unit) - Buying/Cost Price (per unit), times quantity.
+ */
+function calcLineProfitLoss(item){
+  const product = DB.products.find(p=>p.id===item.id);
+  const costPrice = (item.cost!=null ? item.cost : (product?product.cost:0)) || 0;
+  const sellingPrice = item.price||0;
+  const qty = item.qty||0;
+  const profitLoss = (sellingPrice - costPrice) * qty;
+  return { costPrice, sellingPrice, qty, revenue: sellingPrice*qty, cost: costPrice*qty, profitLoss };
+}
+
+/**
+ * Calculate profit/loss for an entire sale transaction (buying price minus selling price,
+ * aggregated across all line items in the sale).
+ */
+function calcTransactionProfitLoss(sale){
+  let revenue=0, cost=0, profitLoss=0;
+  (sale.items||[]).forEach(item=>{
+    const l = calcLineProfitLoss(item);
+    revenue += l.revenue; cost += l.cost; profitLoss += l.profitLoss;
+  });
+  return { saleId: sale.id, date: sale.date, customer: sale.customer||'Walk-in', revenue, cost, profitLoss,
+           margin: revenue>0 ? (profitLoss/revenue*100) : 0 };
+}
+
+/** Profit/Loss for every recorded sale transaction, most recent first. */
+function getAllTransactionsProfitLoss(){
+  return [...(DB.sales||[])].sort((a,b)=>b.date-a.date).map(calcTransactionProfitLoss);
+}
+
+/** Sum P/L across a list of sales (optionally restricted to a date range [start,end] in ms). */
+function summarizeProfitLoss(start, end){
+  const sales = (DB.sales||[]).filter(s=> (start==null||s.date>=start) && (end==null||s.date<=end) );
+  const lines = sales.map(calcTransactionProfitLoss);
+  const totalRevenue = lines.reduce((a,l)=>a+l.revenue,0);
+  const totalCost = lines.reduce((a,l)=>a+l.cost,0);
+  const totalProfitLoss = lines.reduce((a,l)=>a+l.profitLoss,0);
+  return { count: sales.length, totalRevenue, totalCost, totalProfitLoss,
+           margin: totalRevenue>0 ? (totalProfitLoss/totalRevenue*100) : 0 };
+}
+
+/**
+ * Build a consolidated business report covering Sales, Purchases, Debtors (clients) and
+ * Creditors, comparing two date ranges (Period A vs Period B) so trends can be seen at a glance.
+ * Dates are JS millisecond timestamps; pass null for an open-ended bound.
+ */
+function buildComparativeReport(aStart, aEnd, bStart, bEnd){
+  const inRange = (d,start,end)=> (start==null||d>=start) && (end==null||d<=end);
+
+  function periodStats(start,end){
+    const sales = (DB.sales||[]).filter(s=>inRange(s.date,start,end));
+    const purchases = (DB.purchases||[]).filter(p=>inRange(p.date,start,end));
+    const debtors = (DB.clients||[]).filter(c=>inRange(c.lastActivity||0,start,end));
+    const creditors = (DB.creditors||[]).filter(c=>inRange(c.lastActivity||0,start,end));
+    const pl = summarizeProfitLoss(start,end);
+
+    return {
+      sales: { count: sales.length, total: sales.reduce((a,s)=>a+(s.total||0),0) },
+      purchases: { count: purchases.length, total: purchases.reduce((a,p)=>a+(p.amount||0),0) },
+      debts: { count: debtors.length, totalOwed: debtors.reduce((a,c)=>a+(c.balance||0),0) },
+      creditors: { count: creditors.length, totalOwed: creditors.reduce((a,c)=>a+(c.balance||0),0) },
+      profitLoss: pl
+    };
+  }
+
+  const periodA = periodStats(aStart,aEnd);
+  const periodB = periodStats(bStart,bEnd);
+
+  function pctChange(curr,prev){
+    if(!prev) return curr>0 ? 100 : 0;
+    return ((curr-prev)/Math.abs(prev))*100;
+  }
+
+  const comparison = {
+    salesChangePct: pctChange(periodB.sales.total, periodA.sales.total),
+    purchasesChangePct: pctChange(periodB.purchases.total, periodA.purchases.total),
+    debtsChangePct: pctChange(periodB.debts.totalOwed, periodA.debts.totalOwed),
+    creditorsChangePct: pctChange(periodB.creditors.totalOwed, periodA.creditors.totalOwed),
+    profitChangePct: pctChange(periodB.profitLoss.totalProfitLoss, periodA.profitLoss.totalProfitLoss)
+  };
+
+  return { periodA, periodB, comparison };
+}
+
+/* ========================================================================
    RENDERERS
    ======================================================================== */
 const renderers = {};
@@ -675,6 +792,7 @@ renderers.dashboard = function(el){
   const totalProducts = DB.products.length;
   const totalCreditors = (DB.creditors||[]).reduce((a,c)=>a+(c.balance||0),0);
   const totalDebtors = (DB.clients||[]).reduce((a,c)=>a+(c.balance||0),0);
+  const plSummary = summarizeProfitLoss();
   const recentSales = [...sales].sort((a,b)=>b.date-a.date).slice(0,8);
   const topProducts = {};
   sales.forEach(s=>s.items.forEach(i=>{
@@ -707,6 +825,12 @@ renderers.dashboard = function(el){
       <div class="kpi-label">Outstanding Payables</div>
       <div class="kpi-value mono">${fmtNum(totalCreditors)}</div>
       <div class="kpi-change text-muted">${DB.settings.currency} · ${(DB.creditors||[]).length} creditors</div>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Net Profit/Loss (All Time)</div>
+      <div class="kpi-value mono ${plSummary.totalProfitLoss>=0?'text-green':'text-red'}">${plSummary.totalProfitLoss>=0?'+':''}${fmtNum(plSummary.totalProfitLoss)}</div>
+      <div class="kpi-change text-muted">${DB.settings.currency} · ${plSummary.margin.toFixed(1)}% margin</div>
     </div>
   </div>
 
@@ -1420,9 +1544,11 @@ renderers['sales-history'] = function(el){
       ? `<div class="empty-state"><div class="empty-icon">🧾</div><p>No transactions recorded yet. Use the POS to make sales.</p></div>`
       : `<div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>Date/Time</th><th>Receipt #</th><th>Customer</th><th>Items</th><th>Method</th><th>Subtotal</th><th>VAT</th><th>Total</th><th></th></tr></thead>
+          <thead><tr><th>Date/Time</th><th>Receipt #</th><th>Customer</th><th>Items</th><th>Method</th><th>Subtotal</th><th>VAT</th><th>Total</th><th>Profit/Loss</th><th></th></tr></thead>
           <tbody>
-            ${sales.map(s=>`<tr>
+            ${sales.map(s=>{
+              const pl = calcTransactionProfitLoss(s);
+              return `<tr>
               <td style="white-space:nowrap;font-size:0.78rem;">${dateStr(s.date)} ${timeStr(s.date)}</td>
               <td style="font-size:0.75rem;font-family:monospace;">${s.id.slice(-8).toUpperCase()}</td>
               <td>${s.customer||'Walk-in'}</td>
@@ -1431,8 +1557,9 @@ renderers['sales-history'] = function(el){
               <td class="mono">${fmt(s.subtotal)}</td>
               <td class="mono">${fmt(s.vat)}</td>
               <td class="mono"><strong>${fmt(s.total)}</strong></td>
+              <td class="mono ${pl.profitLoss>=0?'text-green':'text-red'}">${pl.profitLoss>=0?'+':''}${fmt(pl.profitLoss)}</td>
               <td><button class="btn btn-ghost btn-sm" onclick="showReceipt(${JSON.stringify(s).split("'").join("&#39;")})">🧾</button></td>
-            </tr>`).join('')}
+            </tr>`;}).join('')}
           </tbody>
         </table>
       </div>`
@@ -1444,6 +1571,116 @@ function clearAllSales(){
   if(!confirm('Delete ALL sales records? This cannot be undone.')) return;
   DB.sales=[];
   saveDB(); navigate('sales-history'); toast('Sales history cleared');
+}
+
+/* ---------- REPORTS & PROFIT/LOSS ---------- */
+renderers.reports = function(el){
+  if(!window._reportRange){
+    const now = new Date();
+    const aEnd = new Date(now.getFullYear(), now.getMonth(), 1).getTime()-1; // end of prev month
+    const aStart = new Date(now.getFullYear(), now.getMonth()-1, 1).getTime(); // start of prev month
+    const bStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime(); // start of this month
+    const bEnd = now.getTime();
+    window._reportRange = {aStart,aEnd,bStart,bEnd};
+  }
+  renderReportsView(el);
+};
+
+function renderReportsView(el){
+  const r = window._reportRange;
+  const report = buildComparativeReport(r.aStart,r.aEnd,r.bStart,r.bEnd);
+  const txns = getAllTransactionsProfitLoss();
+  const toDateInput = ms => ms?new Date(ms).toISOString().slice(0,10):'';
+  const changeBadge = pct => `<span class="${pct>=0?'text-green':'text-red'}">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(1)}%</span>`;
+
+  el.innerHTML = `
+  <div class="card card-pad" style="margin-bottom:1rem;">
+    <div class="section-title">Compare Two Periods</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:0.75rem;align-items:end;">
+      <div class="form-group"><label class="form-label">Period A — Start</label><input class="form-control" id="rep-a-start" type="date" value="${toDateInput(r.aStart)}"></div>
+      <div class="form-group"><label class="form-label">Period A — End</label><input class="form-control" id="rep-a-end" type="date" value="${toDateInput(r.aEnd)}"></div>
+      <div class="form-group"><label class="form-label">Period B — Start</label><input class="form-control" id="rep-b-start" type="date" value="${toDateInput(r.bStart)}"></div>
+      <div class="form-group"><label class="form-label">Period B — End</label><input class="form-control" id="rep-b-end" type="date" value="${toDateInput(r.bEnd)}"></div>
+      <button class="btn btn-primary btn-sm" onclick="updateReportRange()">Compare</button>
+    </div>
+  </div>
+
+  <div class="dash-grid" style="margin-bottom:1rem;">
+    <div class="card card-pad">
+      <div class="section-title">Period A</div>
+      <table class="data-table">
+        <tbody>
+          <tr><td>Sales</td><td class="mono">${fmt(report.periodA.sales.total)} (${report.periodA.sales.count})</td></tr>
+          <tr><td>Purchases</td><td class="mono">${fmt(report.periodA.purchases.total)} (${report.periodA.purchases.count})</td></tr>
+          <tr><td>Debtors Owed</td><td class="mono">${fmt(report.periodA.debts.totalOwed)} (${report.periodA.debts.count})</td></tr>
+          <tr><td>Creditors Owed</td><td class="mono">${fmt(report.periodA.creditors.totalOwed)} (${report.periodA.creditors.count})</td></tr>
+          <tr><td>Net Profit/Loss</td><td class="mono ${report.periodA.profitLoss.totalProfitLoss>=0?'text-green':'text-red'}">${fmt(report.periodA.profitLoss.totalProfitLoss)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card card-pad">
+      <div class="section-title">Period B vs Period A</div>
+      <table class="data-table">
+        <tbody>
+          <tr><td>Sales</td><td class="mono">${fmt(report.periodB.sales.total)} (${report.periodB.sales.count})</td><td>${changeBadge(report.comparison.salesChangePct)}</td></tr>
+          <tr><td>Purchases</td><td class="mono">${fmt(report.periodB.purchases.total)} (${report.periodB.purchases.count})</td><td>${changeBadge(report.comparison.purchasesChangePct)}</td></tr>
+          <tr><td>Debtors Owed</td><td class="mono">${fmt(report.periodB.debts.totalOwed)} (${report.periodB.debts.count})</td><td>${changeBadge(report.comparison.debtsChangePct)}</td></tr>
+          <tr><td>Creditors Owed</td><td class="mono">${fmt(report.periodB.creditors.totalOwed)} (${report.periodB.creditors.count})</td><td>${changeBadge(report.comparison.creditorsChangePct)}</td></tr>
+          <tr><td>Net Profit/Loss</td><td class="mono ${report.periodB.profitLoss.totalProfitLoss>=0?'text-green':'text-red'}">${fmt(report.periodB.profitLoss.totalProfitLoss)}</td><td>${changeBadge(report.comparison.profitChangePct)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card card-pad">
+    <div class="ledger-toolbar">
+      <div class="section-title" style="margin:0;">Profit / Loss Per Transaction</div>
+      <button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="exportProfitLossXLSX()">⬇ Export</button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Date</th><th>Receipt #</th><th>Customer</th><th>Revenue</th><th>Cost (Buying Price)</th><th>Profit/Loss</th><th>Margin</th></tr></thead>
+        <tbody>
+          ${txns.length===0?`<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">No transactions recorded yet.</td></tr>`:
+          txns.map(t=>`<tr>
+            <td style="white-space:nowrap;font-size:0.78rem;">${dateStr(t.date)} ${timeStr(t.date)}</td>
+            <td style="font-size:0.75rem;font-family:monospace;">${t.saleId.slice(-8).toUpperCase()}</td>
+            <td>${t.customer}</td>
+            <td class="mono">${fmt(t.revenue)}</td>
+            <td class="mono">${fmt(t.cost)}</td>
+            <td class="mono ${t.profitLoss>=0?'text-green':'text-red'}">${t.profitLoss>=0?'+':''}${fmt(t.profitLoss)}</td>
+            <td class="mono">${t.margin.toFixed(1)}%</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function updateReportRange(){
+  const v = id => { const el=document.getElementById(id); return el&&el.value? new Date(el.value).getTime():null; };
+  window._reportRange = {
+    aStart: v('rep-a-start'), aEnd: v('rep-a-end'),
+    bStart: v('rep-b-start'), bEnd: v('rep-b-end')
+  };
+  renderReportsView(document.getElementById('vp-canvas'));
+}
+
+function exportProfitLossXLSX(){
+  const txns = getAllTransactionsProfitLoss();
+  const rows = txns.map(t=>({
+    'Date': dateStr(t.date),
+    'Receipt': t.saleId,
+    'Customer': t.customer,
+    'Revenue': t.revenue,
+    'Cost (Buying Price)': t.cost,
+    'Profit/Loss': t.profitLoss,
+    'Margin %': Number(t.margin.toFixed(2))
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Profit-Loss');
+  _downloadXLSX(wb, `profit-loss-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 /* ---------- SETTINGS ---------- */
@@ -1836,10 +2073,52 @@ function importSalesXLSX(e){
 /* ========================================================================
    BOOT
    ======================================================================== */
-loadDB();
-renderLoginProfiles();
-// Allow Enter key in login
-document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') handleLogin(); });
+try{
+  loadDB();
+  renderLoginProfiles();
+  
+  const passInput = document.getElementById('login-pass');
+  if(passInput) passInput.addEventListener('keydown',e=>{ if(e.key==='Enter') handleLogin(); });
+  if(_storageBlocked){
+    setTimeout(()=>{
+      try{ toast('Running in temporary mode — open this file through a local server (not file://) to save data permanently.','error'); }catch(e){}
+    }, 600);
+  }
+}catch(err){
+  console.error('App failed to start:', err);
+  const list = document.getElementById('login-profile-list');
+  if(list){
+    list.innerHTML = '<div style="color:var(--hl-red);font-size:0.85rem;padding:0.5rem;">The app failed to load profiles. Open the browser console (F12) for details, or try serving this file from a local web server instead of opening it directly.</div>';
+  }
+}
+// ---------------------------------------------------------------------------
+// Live clock — Year / Month / Week / Date / Hour / Minute / Second
+// ---------------------------------------------------------------------------
+function isoWeekNumber(d){
+  const date = new Date(d.getTime());
+  date.setHours(0,0,0,0);
+  // Thursday of this week decides the year
+  date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+  const week1 = new Date(date.getFullYear(),0,4);
+  return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+}
+function pad2(n){ return String(n).padStart(2,'0'); }
+function updateLiveClock(){
+  const el = document.getElementById('live-clock');
+  if(!el) return;
+  const now = new Date();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const year = now.getFullYear();
+  const month = months[now.getMonth()];
+  const week = isoWeekNumber(now);
+  const date = pad2(now.getDate());
+  const h = pad2(now.getHours());
+  const m = pad2(now.getMinutes());
+  const s = pad2(now.getSeconds());
+  el.innerHTML = `<span>${year}</span><span>·</span><span>${month}</span><span>·</span><span>Wk ${week}</span><span>·</span><span>${date}</span><span class="lc-time">${h}:${m}:${s}</span>`;
+}
+updateLiveClock();
+setInterval(updateLiveClock, 1000);
 </script>
 </body>
 </html>
